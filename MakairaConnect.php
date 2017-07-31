@@ -15,5 +15,4 @@ use Shopware\Components\Plugin;
 
 class MakairaConnect extends Plugin
 {
-
 }

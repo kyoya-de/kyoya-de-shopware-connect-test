@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/5.2/engine/Shopware/Components/Plugin/schema/config.xsd">
+    <elements>
+        <element required="true" type="text" scope="locale">
+            <name>makaira_connect_secret</name>
+            <label lang="de">Shared Secret</label>
+            <label lang="en">Shared Secret</label>
+        </element>
+
+        <element required="true" type="text" scope="locale">
+            <name>makaira_application_url</name>
+            <label lang="de">Makaira Url</label>
+            <label lang="en">Makaira Url</label>
+        </element>
+
+        <element required="false" type="text" scope="locale">
+            <name>makaira_connect_load_limit</name>
+            <label lang="de">Last Limitierung</label>
+            <label lang="en">Load Limitation</label>
+            <description lang="de">Üblicher Wert: Hälfte der Anzahl der CPU-Kerne auf dieser Maschine (1 CPU-Kern => .5; 4 CPU-Kerne => 2)</description>
+            <description lang="en">Common value: Half of the number of CPU cores on this machine (1 core => .5; 4 cores => 2)</description>
+        </element>
+
+        <element required="true" type="text" scope="locale">
+            <name>makaira_instance</name>
+            <label lang="de">Instanz</label>
+            <label lang="en">Instance</label>
+            <value>live</value>
+        </element>
+
+        <element required="false" type="textarea" scope="locale">
+            <name>makaira_field_blacklist_product</name>
+            <label lang="de"><![CDATA[<b>Produkte</b>: ausgeschlossene Felder]]></label>
+            <label lang="en"><![CDATA[<b>Products</b>: blacklisted fields]]></label>
+        </element>
+
+        <element required="false" type="textarea" scope="locale">
+            <name>makaira_field_blacklist_category</name>
+            <label lang="de"><![CDATA[<b>Kategorie</b>: ausgeschlossene Felder]]></label>
+            <label lang="en"><![CDATA[<b>Category</b>: blacklisted fields]]></label>
+        </element>
+
+        <element required="false" type="textarea" scope="locale">
+            <name>makaira_field_blacklist_manufacturer</name>
+            <label lang="de"><![CDATA[<b>Hersteller</b>: ausgeschlossene Felder]]></label>
+            <label lang="en"><![CDATA[<b>Manufacturer</b>: blacklisted fields]]></label>
+        </element>
+    </elements>
+</config>
