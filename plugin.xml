@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="../../../engine/Shopware/Components/Plugin/schema/plugin.xsd">
+    <label>Makaira :: Connect</label>
+    <version>1.0.0</version>
+    <copyright>marmalade GmbH</copyright>
+    <license>MIT oder OHNE</license>
+    <link>http://www.marmalade.de/</link>
+    <author>marmalade GmbH</author>
+    <description>Don't look back, the lemmings are gaining on you.</description>
+    <compatibility minVersion="5.2.7" />
+</plugin>

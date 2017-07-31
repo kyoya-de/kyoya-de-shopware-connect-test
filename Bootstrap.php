@@ -12,31 +12,20 @@
 
 class Shopware_Plugins_Frontend_MakairaConnect_Bootstrap extends Shopware_Components_Plugin_Bootstrap
 {
-    public function getInfo()
-    {
-        return array_merge(
-            parent::getInfo(),
-            [
-                'author' => 'marmalade GmbH',
-                'link'   => 'https://www.marmalade.de',
-            ]
-        );
-    }
-
-    public function getLabel()
-    {
-        return 'Makaira :: Connect';
-    }
-
-    public function getVersion()
-    {
-        return '0.0.1';
-    }
-
     public function install()
     {
         //        $this->createConfig();
 
+        return true;
+    }
+
+    public function uninstall()
+    {
+        return true;
+    }
+
+    public function update($version)
+    {
         return true;
     }
 }
