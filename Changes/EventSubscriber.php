@@ -21,9 +21,6 @@ class EventSubscriber implements SubscriberInterface
     public static function getSubscribedEvents()
     {
         return [
-            'Shopware\Models\Article\Article::postPersist'   => 'onProductSave',
-            'Shopware\Models\Article\Article::postUpdate'    => 'onProductSave',
-            'Shopware\Models\Article\Article::preRemove'     => 'onProductSave',
             'Shopware\Models\Category\Category::postPersist' => 'onCategorySave',
             'Shopware\Models\Category\Category::postUpdate'  => 'onCategorySave',
             'Shopware\Models\Category\Category::preRemove'   => 'onCategorySave',
@@ -34,13 +31,6 @@ class EventSubscriber implements SubscriberInterface
             'Shopware\Models\Article\Detail::postUpdate'     => 'onVariantSave',
             'Shopware\Models\Article\Detail::preRemove'      => 'onVariantSave',
         ];
-    }
-
-    public function onProductSave(\Enlight_Event_EventArgs $event)
-    {
-        /** @var Article $model */
-        $model = $event->get('entity');
-        $this->manager->add('product', $model->getId());
     }
 
     public function onCategorySave(\Enlight_Event_EventArgs $event)
@@ -61,6 +51,7 @@ class EventSubscriber implements SubscriberInterface
     {
         /** @var Detail $model */
         $model = $event->get('entity');
-        $this->manager->add('variant', $model->getId());
+        $type = (2 == $model->getKind()) ? 'variant' : 'product';
+        $this->manager->add($type, $model->getId());
     }
 }
