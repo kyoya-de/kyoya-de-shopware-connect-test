@@ -11,7 +11,8 @@
 
 namespace MakairaConnect;
 
-use MakairaConnect\Models\ConnectChanges;
+use Doctrine\ORM\EntityManagerInterface;
+use MakairaConnect\Models\ConnectChange;
 use Shopware\Components\Plugin;
 use Shopware\Components\Plugin\Context\InstallContext;
 
@@ -19,11 +20,12 @@ class MakairaConnect extends Plugin
 {
     public function install(InstallContext $context)
     {
+        /** @var EntityManagerInterface $entityManager */
         $entityManager = $this->container->get('shopware.model_manager');
         $schemaTool    = new \Doctrine\ORM\Tools\SchemaTool($entityManager);
 
         $classes = array(
-            $entityManager->getClassMetadata(ConnectChanges::class)
+            $entityManager->getClassMetadata(ConnectChange::class)
         );
 
         try {
