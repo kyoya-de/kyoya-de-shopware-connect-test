@@ -16,6 +16,10 @@ use MakairaConnect\Models\ConnectChange;
 use Shopware\Components\Plugin;
 use Shopware\Components\Plugin\Context\InstallContext;
 
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    include __DIR__ . '/vendor/autoload.php';
+}
+
 class MakairaConnect extends Plugin
 {
     public function install(InstallContext $context)
@@ -34,5 +38,4 @@ class MakairaConnect extends Plugin
             //ignore
         }
     }
-
 }
