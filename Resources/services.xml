@@ -9,9 +9,12 @@
             <argument type="service" id="shopware.model_manager" />
             <argument type="service" id="dbal_connection" />
         </service>
+
         <service id="makaira_connect.changes.event_subscriber" class="MakairaConnect\Changes\EventSubscriber">
             <argument type="service" id="makaira_connect.changes.manager" />
             <tag name="shopware.event_subscriber" />
         </service>
+
+        <service id="makaira_connect.signature.hash_generator" class="Makaira\Signing\Hash\Sha256"/>
     </services>
 </container>
