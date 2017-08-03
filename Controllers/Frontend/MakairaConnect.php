@@ -64,14 +64,31 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
             'ok'       => true,
         ];
 
-        $db           = $this->container->get('dbal_connection');
+        $db = $this->container->get('dbal_connection');
+
         $fetchProduct = $db->prepare(
+            'SELECT a.*, d.*
+            FROM s_articles a, s_articles_details d
+            WHERE a.id = d.articleID AND a.id = ?'
+        );
+
+        $fetchVariant = $db->prepare(
             'SELECT a.*, d.*
             FROM s_articles a, s_articles_details d
             WHERE a.id = d.articleID AND d.id = ?'
         );
 
-        $productCheck = ['product', 'variant'];
+        $fetchCategory = $db->prepare(
+            'SELECT c.*
+            FROM s_categories c
+            WHERE c.id = ?'
+        );
+
+        $fetchManufacturer = $db->prepare(
+            'SELECT s.*
+            FROM s_articles_supplier s
+            WHERE s.id = ?'
+        );
 
         foreach ($changes as $change) {
 
@@ -79,19 +96,53 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
                 'type'     => $change->getType(),
                 'id'       => $change->getId(),
                 'sequence' => $change->getSequence(),
+                'data'     => [],
                 'deleted'  => true,
             ];
 
-            if (in_array($change->getType(), $productCheck, true)) {
+            // product
+            if ('product' === $change->getType()) {
                 $fetchProduct->execute([$change->getId()]);
-                $changeResult['data']    = $fetchProduct->fetch(PDO::FETCH_ASSOC);
-                $changeResult['deleted'] = (0 == count($changeResult['data']));
+                $data = $fetchProduct->fetch(PDO::FETCH_ASSOC);
 
-                if ('product' === $change->getType()) {
-                    $changeResult['id']         = $changeResult['data']['articleID'];
+                if (false !== $data) {
+                    $changeResult['deleted']    = false;
+                    $changeResult['data']       = $data;
                     $changeResult['data']['id'] = $changeResult['data']['articleID'];
-                } else {
+                }
+            }
+
+            // variant
+            if ('variant' === $change->getType()) {
+                $fetchVariant->execute([$change->getId()]);
+                $data = $fetchVariant->fetch(PDO::FETCH_ASSOC);
+
+                if (false !== $data) {
+                    $changeResult['deleted']        = false;
+                    $changeResult['data']           = $data;
                     $changeResult['data']['parent'] = $changeResult['data']['articleID'];
+                }
+            }
+
+            // category
+            if ('category' === $change->getType()) {
+                $fetchCategory->execute([$change->getId()]);
+                $data = $fetchCategory->fetch(PDO::FETCH_ASSOC);
+
+                if (false !== $data) {
+                    $changeResult['deleted'] = false;
+                    $changeResult['data']    = $data;
+                }
+            }
+
+            // manufacturer
+            if ('manufacturer' === $change->getType()) {
+                $fetchManufacturer->execute([$change->getId()]);
+                $data = $fetchManufacturer->fetch(PDO::FETCH_ASSOC);
+
+                if (false !== $data) {
+                    $changeResult['deleted'] = false;
+                    $changeResult['data']    = $data;
                 }
             }
 
