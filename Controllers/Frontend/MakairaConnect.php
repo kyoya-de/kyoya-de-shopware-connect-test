@@ -1,7 +1,10 @@
 <?php
 
+use Elasticsearch\Common\Exceptions\Forbidden403Exception;
+use Makaira\Signing\Hash\Sha256;
 use Shopware\Components\CSRFWhitelistAware;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 
 /**
  * This file is part of a marmalade GmbH project
@@ -14,9 +17,27 @@ use Symfony\Component\HttpFoundation\JsonResponse;
  */
 class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Action implements CSRFWhitelistAware
 {
+    /**
+     * @var \Symfony\Component\HttpFoundation\Request
+     */
+    private $makairaRequest;
+
     public function preDispatch()
     {
-        Shopware()->Plugins()->Controller()->ViewRenderer()->setNoRender();
+        $controller   = $this->get('plugin_manager')->Controller();
+        $controller->ViewRenderer()->setNoRender();
+
+        $this->makairaRequest = Request::createFromGlobals();
+
+        if ('json' === $this->makairaRequest->getContentType()) {
+            $params = json_decode(file_get_contents('php://input'), true);
+            $this->makairaRequest->request->replace($params);
+        }
+
+        $configReader = $this->container->get('shopware.plugin.config_reader');
+        $config       = $configReader->getByPluginName('MakairaConnect');
+
+        $this->verifySignature($config['makaira_connect_secret']);
     }
 
     public function getWhitelistedCSRFActions()
@@ -81,5 +102,34 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         $jsonResponse->setData($result);
 
         $jsonResponse->send();
+    }
+
+    /**
+     * @param string $secret
+     *
+     * @throws \Enlight_Controller_Exception
+     */
+    public function verifySignature($secret)
+    {
+        if (
+            !$this->makairaRequest->headers->has('x-makaira-nonce') ||
+            !$this->makairaRequest->headers->has('x-makaira-hash')
+        ) {
+            throw new Enlight_Controller_Exception("Unauthorized", 401);
+        }
+
+        $signer = $this->container->get('makaira_connect.signature.hash_generator');
+
+        $expected = $signer->hash(
+            $this->makairaRequest->headers->get('x-makaira-nonce'),
+            $this->makairaRequest->getContent(),
+            $secret
+        );
+
+        $current = $this->makairaRequest->headers->get('x-makaira-hash');
+
+        if (!hash_equals($expected, $current)) {
+            throw new Enlight_Controller_Exception("Forbidden", 403);
+        }
     }
 }
