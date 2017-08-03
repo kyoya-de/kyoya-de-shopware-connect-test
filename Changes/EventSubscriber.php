@@ -3,11 +3,9 @@
 namespace MakairaConnect\Changes;
 
 use Enlight\Event\SubscriberInterface;
-use Shopware\Models\Article\Article;
 use Shopware\Models\Article\Detail;
 use Shopware\Models\Article\Supplier;
 use Shopware\Models\Category\Category;
-use Symfony\Component\EventDispatcher\Event;
 
 class EventSubscriber implements SubscriberInterface
 {
@@ -51,7 +49,7 @@ class EventSubscriber implements SubscriberInterface
     {
         /** @var Detail $model */
         $model = $event->get('entity');
-        $type = (2 == $model->getKind()) ? 'variant' : 'product';
+        $type  = (2 == $model->getKind()) ? 'variant' : 'product';
         $this->manager->add($type, $model->getId());
     }
 }
