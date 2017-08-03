@@ -51,7 +51,10 @@ class EventSubscriber implements SubscriberInterface
     {
         /** @var Detail $model */
         $model = $event->get('entity');
-        $type = (2 == $model->getKind()) ? 'variant' : 'product';
-        $this->manager->add($type, $model->getId());
+        if (2 == $model->getKind()) {
+            $this->manager->add('variant', $model->getId());
+        } else {
+            $this->manager->add('product', $model->getArticleId());
+        }
     }
 }
