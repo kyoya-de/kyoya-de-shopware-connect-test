@@ -1,6 +1,9 @@
 {
   "name": "makaira/connect",
-  "type": "oxid-module",
+  "type": "shopware-plugin",
+  "extra": {
+    "installer-name": "MakairaConnect"
+  },
   "require-dev": {
     "phpunit/phpunit": "^4.0",
     "pdepend/pdepend": "@stable",
@@ -14,7 +17,7 @@
     }
   },
   "require": {
-    "makaira/shared-libs": "^2017.7.0",
+    "makaira/shared-libs": "^2019.7.0",
     "marm/yamm": "@stable",
     "doctrine/dbal": "^2.5"
   },

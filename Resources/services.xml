@@ -5,16 +5,16 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
-        <service id="makaira_connect.changes.manager" class="MakairaConnect\Changes\Manager">
-            <argument type="service" id="shopware.model_manager" />
-            <argument type="service" id="dbal_connection" />
-        </service>
-
-        <service id="makaira_connect.changes.event_subscriber" class="MakairaConnect\Changes\EventSubscriber">
-            <argument type="service" id="makaira_connect.changes.manager" />
+        <service id="makaira_connect.subscriber.event"
+                 class="MakairaConnect\Classes\Subscriber\EventSubscriber">
+        
             <tag name="shopware.event_subscriber" />
         </service>
-
-        <service id="makaira_connect.signature.hash_generator" class="Makaira\Signing\Hash\Sha256"/>
+        
+        <service id="makaira_connect.subscriber.model"
+                 class="MakairaConnect\Classes\Subscriber\ModelSubscriber">
+            
+            <tag name="shopware.model_subscriber" />
+        </service>
     </services>
 </container>
