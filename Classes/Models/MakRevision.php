@@ -1,15 +1,15 @@
 <?php
 
-namespace MakairaConnect\Models;
+namespace MakairaConnect\Classes\Models;
 
 use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Entity
- * @ORM\Table(name="mak_connect_changes", uniqueConstraints={@ORM\UniqueConstraint(name="mak_unique_doc", columns={"id", "type"})})
+ * @ORM\Entity(repositoryClass="MakairaConnect\Classes\Repositories\MakRevisionRepository")
+ * @ORM\Table(name="mak_revision", uniqueConstraints={@ORM\UniqueConstraint(name="mak_unique_doc", columns={"id", "type"})})
  */
-class ConnectChange extends ModelEntity
+class MakRevision extends ModelEntity
 {
     /**
      * Primary Key - autoincrement value
@@ -68,7 +68,7 @@ class ConnectChange extends ModelEntity
     /**
      * @param string $type
      *
-     * @return ConnectChange
+     * @return MakRevision
      */
     public function setType($type)
     {
@@ -88,7 +88,7 @@ class ConnectChange extends ModelEntity
     /**
      * @param int $id
      *
-     * @return ConnectChange
+     * @return MakRevision
      */
     public function setId($id)
     {
@@ -108,7 +108,7 @@ class ConnectChange extends ModelEntity
     /**
      * @param \DateTime $changed
      *
-     * @return ConnectChange
+     * @return MakRevision
      */
     public function setChanged($changed)
     {
