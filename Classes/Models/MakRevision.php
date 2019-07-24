@@ -50,6 +50,13 @@ class MakRevision extends ModelEntity
     private $changed;
 
     /**
+     * set default date
+     */
+    public function __construct() {
+      $this->changed = new \DateTime("now");
+    }
+
+    /**
      * @return int
      */
     public function getSequence()
