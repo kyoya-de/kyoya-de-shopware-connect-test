@@ -1,9 +1,9 @@
 <?php
 
-namespace MakairaConnect\Classes\Subscriber;
+namespace MakairaConnect\Subscriber;
 
 use Doctrine\Common\EventSubscriber;
-use MakairaConnect\Classes\Models\MakRevision;
+use MakairaConnect\Models\MakRevision;
 
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Events;
@@ -13,7 +13,7 @@ use Shopware\Models\Article\Detail;
 use Shopware\Models\Category\Category;
 use Shopware\Models\Article\Supplier;
 
-use MakairaConnect\Classes\Models\MakRevision as MakRevisionModel;
+use MakairaConnect\Models\MakRevision as MakRevisionModel;
 
 class DoctrineSubscriber implements EventSubscriber {
     CONST INSTANCES = [

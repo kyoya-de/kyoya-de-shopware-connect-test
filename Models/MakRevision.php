@@ -1,12 +1,12 @@
 <?php
 
-namespace MakairaConnect\Classes\Models;
+namespace MakairaConnect\Models;
 
 use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ORM\Entity(repositoryClass="MakairaConnect\Classes\Repositories\MakRevisionRepository")
+ * @ORM\Entity(repositoryClass="MakairaConnect\Repositories\MakRevisionRepository")
  * @ORM\Table(name="mak_revision", uniqueConstraints={@ORM\UniqueConstraint(name="mak_unique_doc", columns={"id", "type"})})
  */
 class MakRevision extends ModelEntity
