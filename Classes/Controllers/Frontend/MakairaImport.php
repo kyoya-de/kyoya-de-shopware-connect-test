@@ -1,7 +1,7 @@
 <?php
 
 use Elasticsearch\Common\Exceptions\Forbidden403Exception;
-use Makaira\Signing\Hash\Sha256;
+//use Makaira\Signing\Hash\Sha256;
 use Shopware\Components\CSRFWhitelistAware;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -15,7 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
  * @author     Stefan Krenz <krenz@marmalade.de>
  * @link       http://www.marmalade.de
  */
-class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Action implements CSRFWhitelistAware
+class Shopware_Controllers_Frontend_MakairaImport extends \Enlight_Controller_Action
 {
     /**
      * @var \Symfony\Component\HttpFoundation\Request
@@ -153,6 +153,15 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         $jsonResponse->setData($result);
 
         $jsonResponse->send();
+    }
+
+    public function importAction() {
+      Shopware()->Plugins()->Controller()->ViewRenderer()->setNoRender();
+
+      $jsonResponse = new JsonResponse();
+      $jsonResponse->setData('test');
+
+      $jsonResponse->send();
     }
 
     /**
