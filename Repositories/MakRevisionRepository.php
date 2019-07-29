@@ -1,9 +1,9 @@
 <?php
 
-namespace MakairaConnect\Classes\Repositories;
+namespace MakairaConnect\Repositories;
 
 use Doctrine\ORM\EntityRepository;
-use MakairaConnect\Classes\Models\MakRevision as MakRevisionModel;
+use MakairaConnect\Models\MakRevision as MakRevisionModel;
 
 /**
  * MakRevisionRepository
@@ -36,7 +36,7 @@ class MakRevisionRepository extends EntityRepository {
    * @param $lastRev
    * @param int $count
    *
-   * @return \MakairaConnect\Classes\Models\MakRevision[]
+   * @return \MakairaConnect\Models\MakRevision[]
    */
   public function getRevisions($lastRev, $count = 50) {
     $query = $this->createQueryBuilder('revisions')

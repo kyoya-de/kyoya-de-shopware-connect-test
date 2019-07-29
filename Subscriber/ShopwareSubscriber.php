@@ -1,9 +1,9 @@
 <?php
 
-namespace MakairaConnect\Classes\Subscriber;
+namespace MakairaConnect\Subscriber;
 
 use Enlight\Event\SubscriberInterface;
-use MakairaConnect\Classes\Repositories\MakRevisionRepository;
+use MakairaConnect\Repositories\MakRevisionRepository;
 
 class ShopwareSubscriber implements SubscriberInterface {
   /** @var MakRevisionRepository */
