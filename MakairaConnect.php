@@ -20,7 +20,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 
-use MakairaConnect\Classes\Models\MakRevision as MakRevisionModel;
+use MakairaConnect\Models\MakRevision as MakRevisionModel;
 
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     include __DIR__ . '/vendor/autoload.php';

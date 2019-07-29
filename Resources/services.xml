@@ -6,13 +6,13 @@
 
     <services>
         <service id="makaira_connect.subscriber.event.shopware"
-                 class="MakairaConnect\Classes\Subscriber\ShopwareSubscriber">
+                 class="MakairaConnect\Subscriber\ShopwareSubscriber">
         
             <tag name="shopware.event_subscriber" />
         </service>
         
         <service id="makaira_connect.subscriber.event.doctrine"
-                 class="MakairaConnect\Classes\Subscriber\DoctrineSubscriber">
+                 class="MakairaConnect\Subscriber\DoctrineSubscriber">
             
             <tag name="doctrine.event_subscriber" />
         </service>
