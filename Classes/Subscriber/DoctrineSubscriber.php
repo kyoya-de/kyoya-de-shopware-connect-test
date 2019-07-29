@@ -17,9 +17,15 @@ use MakairaConnect\Classes\Models\MakRevision as MakRevisionModel;
 
 class DoctrineSubscriber implements EventSubscriber {
     CONST INSTANCES = [
-        Article::class,
-        Category::class,
-        Supplier::class
+        //Related to: PRODUCT
+        'product' => Article::class,
+        'variant' => Detail::class,
+
+        //Related to: CATEGORY
+        'category' => Category::class,
+
+        //Related to: MANUFACTURER
+        'manufacturer' => Supplier::class
     ];
 
     /**
@@ -29,8 +35,8 @@ class DoctrineSubscriber implements EventSubscriber {
     public function getSubscribedEvents() {
         return [
             Events::postUpdate,
-            //Events::postPersist,
-            //Events::postRemove,
+            Events::postPersist,
+            Events::preRemove,
           ];
     }
 
@@ -51,7 +57,7 @@ class DoctrineSubscriber implements EventSubscriber {
     /**
      * @param LifecycleEventArgs $arguments
      */
-    public function postRemove(LifecycleEventArgs $arguments) {
+    public function preRemove(LifecycleEventArgs $arguments) {
         $this->generateRevisionEntry('delete', $arguments);
     }
 
@@ -60,23 +66,26 @@ class DoctrineSubscriber implements EventSubscriber {
      * @param $arguments LifecycleEventArgs
      */
     private function generateRevisionEntry($method, $arguments) {
-        if(!$this->checkIntance($arguments)) {
+        $entity = $arguments->getEntity();
+        $type = $this->checkInstance($entity);
+        if(!$type) {
             return;
         }
 
+        /** @var Article|Detail|Category|Supplier $entity */
+
         $makRevisionRepo = Shopware()->Models()->getRepository(MakRevisionModel::class);
-        $makRevisionRepo->addRevision('product', 1);
+        $makRevisionRepo->addRevision($type, $entity->getId());
     }
 
     /**
-     * @param $arguments LifecycleEventArgs
-     * @return bool
+     * @param $entity Object
+     * @return bool|string
      */
-    private function checkIntance($arguments) {
-        $model = $arguments->getEntity();
-        foreach (self::INSTANCES as $instance) {
-            if($model instanceof $instance) {
-                return true;
+    private function checkInstance($entity) {
+        foreach (self::INSTANCES as $type => $instance) {
+            if($entity instanceof $instance) {
+                return $type;
             }
         }
 
