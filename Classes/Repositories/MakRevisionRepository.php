@@ -3,6 +3,7 @@
 namespace MakairaConnect\Classes\Repositories;
 
 use Doctrine\ORM\EntityRepository;
+use MakairaConnect\Classes\Models\MakRevision as MakRevisionModel;
 
 /**
  * MakRevisionRepository
@@ -17,7 +18,7 @@ class MakRevisionRepository extends EntityRepository {
   public function addRevision($type, $objectId) {
     $data = ['type' => $type, 'id' => $objectId];
 
-    /** @var \MakairaConnect\Classes\Models\MakRevision $revision */
+    /** @var MakRevisionModel $revision */
     $revision = $this->findOneBy($data);
 
     if($revision) {
@@ -25,7 +26,7 @@ class MakRevisionRepository extends EntityRepository {
       $this->_em->flush();
     }
 
-    $revision = new $this->_class();
+    $revision = new MakRevisionModel();
     $revision->fromArray($data);
     $this->_em->persist($revision);
     $this->_em->flush();
