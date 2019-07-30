@@ -2,9 +2,16 @@
 
 use Elasticsearch\Common\Exceptions\Forbidden403Exception;
 use Makaira\Signing\Hash\Sha256;
-use Shopware\Components\CSRFWhitelistAware;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+
+use MakairaConnect\Models\MakRevision as MakRevisionModel;
+
+use Shopware\Models\Article\Article as ArticleModel;
+use Shopware\Models\Article\Supplier as SupplierModel;
+use Shopware\Models\Category\Category as CategoryModel;
+
+use Shopware\Components\CSRFWhitelistAware;
 
 /**
  * This file is part of a marmalade GmbH project
@@ -15,20 +22,49 @@ use Symfony\Component\HttpFoundation\Request;
  * @author     Stefan Krenz <krenz@marmalade.de>
  * @link       http://www.marmalade.de
  */
-class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Action implements CSRFWhitelistAware
+class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_Action implements CSRFWhitelistAware
 {
+    /* Hydration mode constants */
+    /**
+     * Hydrates an object graph. This is the default behavior.
+     */
+    CONST HYDRATE_OBJECT = 1;
+
+    /**
+     * Hydrates an array graph.
+     */
+    CONST HYDRATE_ARRAY = 2;
+
     /**
      * @var \Symfony\Component\HttpFoundation\Request
      */
     private $makairaRequest;
 
+    /** @var \Doctrine\ORM\EntityRepository */
+    private $repo_article;
+
+    /** @var \Doctrine\ORM\EntityRepository */
+    private $repo_supplier;
+
+    /** @var \Doctrine\ORM\EntityRepository */
+    private $repo_category;
+
+    /** @var \Shopware\Components\Model\ModelManager */
+    private $em;
+
+    /**
+     * @throws Enlight_Controller_Exception
+     */
     public function preDispatch()
     {
-        $controller   = $this->get('plugin_manager')->Controller();
-        $controller->ViewRenderer()->setNoRender();
+        Shopware()->Plugins()->Controller()->ViewRenderer()->setNoRender();
+
+        $this->em = Shopware()->Models();
+        $this->repo_article = $this->em->getRepository(ArticleModel::class);
+        $this->repo_category = $this->em->getRepository(CategoryModel::class);
+        $this->repo_supplier = $this->em->getRepository(SupplierModel::class);
 
         $this->makairaRequest = Request::createFromGlobals();
-
         if ('json' === $this->makairaRequest->getContentType()) {
             $params = json_decode(file_get_contents('php://input'), true);
             $this->makairaRequest->request->replace($params);
@@ -40,110 +76,74 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         $this->verifySignature($config['makaira_connect_secret']);
     }
 
+    /**
+     * @return array|string[]
+     */
     public function getWhitelistedCSRFActions()
     {
         return [
-            'index',
+            'import',
         ];
     }
 
+    /**
+     * @throws Exception
+     */
     public function indexAction()
     {
+        $this->redirect('index');
+    }
+
+    public function importAction() {
+        Shopware()->Plugins()->Controller()->ViewRenderer()->setNoRender();
+
         $params = json_decode(file_get_contents('php://input'));
-        /** @var \MakairaConnect\Changes\Manager $manager */
-        $manager = $this->container->get('makaira_connect.changes.manager');
-        $changes = $manager->getChanges($params->since, $params->count);
+
+        /** @var \MakairaConnect\Repositories\MakRevisionRepository $makRevisionRepo */
+        $makRevisionRepo = Shopware()->Models()->getRepository(MakRevisionModel::class);
+
+        /** @var MakRevisionModel[] $revisions */
+        $revisions = $makRevisionRepo->getRevisions($params->since, $params->count);
 
         $result = [
             'type'     => null,
             'since'    => $params->since,
-            'count'    => count($changes),
+            'count'    => count($revisions),
             'changes'  => [],
             'language' => 'de',
             'highLoad' => false,
             'ok'       => true,
         ];
 
-        $db = $this->container->get('dbal_connection');
-
-        $fetchProduct = $db->prepare(
-            'SELECT a.*, d.*
-            FROM s_articles a, s_articles_details d
-            WHERE a.id = d.articleID AND a.id = ?'
-        );
-
-        $fetchVariant = $db->prepare(
-            'SELECT a.*, d.*
-            FROM s_articles a, s_articles_details d
-            WHERE a.id = d.articleID AND d.id = ?'
-        );
-
-        $fetchCategory = $db->prepare(
-            'SELECT c.*
-            FROM s_categories c
-            WHERE c.id = ?'
-        );
-
-        $fetchManufacturer = $db->prepare(
-            'SELECT s.*
-            FROM s_articles_supplier s
-            WHERE s.id = ?'
-        );
-
-        foreach ($changes as $change) {
-
+        foreach ($revisions as $revision) {
             $changeResult = [
-                'type'     => $change->getType(),
-                'id'       => $change->getId(),
-                'sequence' => $change->getSequence(),
+                'type'     => $revision->getType(),
+                'id'       => $revision->getId(),
+                'sequence' => $revision->getSequence(),
                 'data'     => [],
                 'deleted'  => true,
             ];
 
-            // product
-            if ('product' === $change->getType()) {
-                $fetchProduct->execute([$change->getId()]);
-                $data = $fetchProduct->fetch(PDO::FETCH_ASSOC);
+            switch($revision->getType()) {
+                case 'product':
+                    $data = $this->fetchProducts($changeResult['id'], true);
+                    break;
 
-                if (false !== $data) {
-                    $changeResult['deleted']    = false;
-                    $changeResult['data']       = $data;
-                    $changeResult['data']['id'] = $changeResult['data']['articleID'];
-                }
+                case 'variant':
+                    $data = $this->fetchProducts($changeResult['id'], false);
+                    break;
+
+                case 'category':
+                    $data = $this->repo_category->findBy(['id' => $changeResult['id']]);
+                    break;
+
+                case 'manufacturer':
+                    $data = $this->repo_supplier->findBy(['id' => $changeResult['id']]);
+                    break;
             }
 
-            // variant
-            if ('variant' === $change->getType()) {
-                $fetchVariant->execute([$change->getId()]);
-                $data = $fetchVariant->fetch(PDO::FETCH_ASSOC);
-
-                if (false !== $data) {
-                    $changeResult['deleted']        = false;
-                    $changeResult['data']           = $data;
-                    $changeResult['data']['parent'] = $changeResult['data']['articleID'];
-                }
-            }
-
-            // category
-            if ('category' === $change->getType()) {
-                $fetchCategory->execute([$change->getId()]);
-                $data = $fetchCategory->fetch(PDO::FETCH_ASSOC);
-
-                if (false !== $data) {
-                    $changeResult['deleted'] = false;
-                    $changeResult['data']    = $data;
-                }
-            }
-
-            // manufacturer
-            if ('manufacturer' === $change->getType()) {
-                $fetchManufacturer->execute([$change->getId()]);
-                $data = $fetchManufacturer->fetch(PDO::FETCH_ASSOC);
-
-                if (false !== $data) {
-                    $changeResult['deleted'] = false;
-                    $changeResult['data']    = $data;
-                }
+            if($data) {
+                $this->saveObjectData($data, $changeResult);
             }
 
             $result['changes'][] = $changeResult;
@@ -156,11 +156,48 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     }
 
     /**
+     * @param $data
+     * @param $changeResult &array
+     */
+    private function saveObjectData($data, &$changeResult) {
+        $changeResult['deleted'] = false;
+        $changeResult['data']    = $data;
+
+        if($changeResult['type'] === 'product') {
+            $changeResult['data']['id'] = $changeResult['data']['articleID'];
+        } else if ($changeResult['type'] === 'variant') {
+            $changeResult['data']['parent'] = $changeResult['data']['articleID'];
+        }
+    }
+
+    /**
+     * @param $id string
+     * @param bool $getAllProducts
+     * @return mixed
+     */
+    private function fetchProducts($id, $getAllProducts = false) {
+        if($getAllProducts) {
+            $table = 'article';
+        } else {
+            $table = 'details';
+        }
+
+        /** @var \Doctrine\ORM\QueryBuilder $shopArticleQuery */
+        $shopArticleQuery = $this->repo_article->createQueryBuilder('article')
+            ->select('article, details')
+            ->innerJoin('article.details', 'details')
+            ->where($table.'.id = :id')
+            ->setParameter('id', $id);
+
+        return $shopArticleQuery->getQuery()->getResult(self::HYDRATE_ARRAY);
+    }
+
+    /**
      * @param string $secret
      *
      * @throws \Enlight_Controller_Exception
      */
-    public function verifySignature($secret)
+    private function verifySignature($secret)
     {
         if (
             !$this->makairaRequest->headers->has('x-makaira-nonce') ||
