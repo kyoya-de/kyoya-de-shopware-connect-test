@@ -22,8 +22,7 @@ use Shopware\Components\CSRFWhitelistAware;
  * @author     Stefan Krenz <krenz@marmalade.de>
  * @link       http://www.marmalade.de
  */
-class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_Action implements CSRFWhitelistAware
-{
+class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_Action implements CSRFWhitelistAware {
     /* Hydration mode constants */
     /**
      * Hydrates an object graph. This is the default behavior.
@@ -52,11 +51,16 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     /** @var \Shopware\Components\Model\ModelManager */
     private $em;
 
+    /** @var array */
+    private $config = [];
+
+    /** @var array */
+    private $params = [];
+
     /**
      * @throws Enlight_Controller_Exception
      */
-    public function preDispatch()
-    {
+    public function preDispatch() {
         Shopware()->Plugins()->Controller()->ViewRenderer()->setNoRender();
 
         $this->em = Shopware()->Models();
@@ -65,22 +69,22 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
         $this->repo_supplier = $this->em->getRepository(SupplierModel::class);
 
         $this->makairaRequest = Request::createFromGlobals();
+        $this->params = json_decode(file_get_contents('php://input'), true);
+
         if ('json' === $this->makairaRequest->getContentType()) {
-            $params = json_decode(file_get_contents('php://input'), true);
-            $this->makairaRequest->request->replace($params);
+            $this->makairaRequest->request->replace($this->params);
         }
 
         $configReader = $this->container->get('shopware.plugin.config_reader');
-        $config       = $configReader->getByPluginName('MakairaConnect');
+        $this->config = $configReader->getByPluginName('MakairaConnect');
 
-        $this->verifySignature($config['makaira_connect_secret']);
+        $this->verifySignature($this->config['makaira_connect_secret']);
     }
 
     /**
      * @return array|string[]
      */
-    public function getWhitelistedCSRFActions()
-    {
+    public function getWhitelistedCSRFActions() {
         return [
             'import',
         ];
@@ -89,25 +93,22 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     /**
      * @throws Exception
      */
-    public function indexAction()
-    {
+    public function indexAction() {
         $this->redirect('index');
     }
 
     public function importAction() {
         Shopware()->Plugins()->Controller()->ViewRenderer()->setNoRender();
 
-        $params = json_decode(file_get_contents('php://input'));
-
         /** @var \MakairaConnect\Repositories\MakRevisionRepository $makRevisionRepo */
         $makRevisionRepo = Shopware()->Models()->getRepository(MakRevisionModel::class);
 
         /** @var MakRevisionModel[] $revisions */
-        $revisions = $makRevisionRepo->getRevisions($params->since, $params->count);
+        $revisions = $makRevisionRepo->getRevisions($this->params['since'], $this->params['count']);
 
         $result = [
             'type'     => null,
-            'since'    => $params->since,
+            'since'    => $this->params['since'],
             'count'    => count($revisions),
             'changes'  => [],
             'language' => 'de',
@@ -197,16 +198,17 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
      *
      * @throws \Enlight_Controller_Exception
      */
-    private function verifySignature($secret)
-    {
+    private function verifySignature($secret) {
         if (
+            !count($this->config) ||
+            !count($this->params) ||
             !$this->makairaRequest->headers->has('x-makaira-nonce') ||
             !$this->makairaRequest->headers->has('x-makaira-hash')
         ) {
             throw new Enlight_Controller_Exception("Unauthorized", 401);
         }
-
-        $signer = $this->container->get('makaira_connect.signature.hash_generator');
+        
+        $signer = new Sha256();
 
         $expected = $signer->hash(
             $this->makairaRequest->headers->get('x-makaira-nonce'),
