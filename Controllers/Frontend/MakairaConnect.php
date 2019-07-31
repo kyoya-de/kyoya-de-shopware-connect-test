@@ -35,6 +35,11 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     CONST HYDRATE_ARRAY = 2;
 
     /**
+     * List of possible actions to be called from makaira
+     */
+    CONST POSSIBLE_ACTIONS = ['getUpdates', 'listLanguages'];
+
+    /**
      * @var \Symfony\Component\HttpFoundation\Request
      */
     private $makairaRequest;
@@ -91,15 +96,27 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     }
 
     /**
+     * invalid action -> redirect to index site
      * @throws Exception
      */
     public function indexAction() {
         $this->redirect('index');
     }
 
+    /**
+     * import action for makaira to connect to
+     * See list of possible actions/methods in 'SELF::POSSIBLE_ACTIONS'
+     */
     public function importAction() {
         Shopware()->Plugins()->Controller()->ViewRenderer()->setNoRender();
+        $this->{$this->params['action']};
+    }
 
+    private function listLanguages() {
+
+    }
+
+    private function getUpdates() {
         /** @var \MakairaConnect\Repositories\MakRevisionRepository $makRevisionRepo */
         $makRevisionRepo = Shopware()->Models()->getRepository(MakRevisionModel::class);
 
@@ -200,10 +217,10 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
      */
     private function verifySignature($secret) {
         if (
-            !count($this->config) ||
-            !count($this->params) ||
             !$this->makairaRequest->headers->has('x-makaira-nonce') ||
-            !$this->makairaRequest->headers->has('x-makaira-hash')
+            !$this->makairaRequest->headers->has('x-makaira-hash') ||
+            !in_array($this->params['action'], SELF::POSSIBLE_ACTIONS, true) ||
+            !method_exists($this, $this->params['action'])
         ) {
             throw new Enlight_Controller_Exception("Unauthorized", 401);
         }
