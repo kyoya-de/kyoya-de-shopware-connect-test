@@ -87,12 +87,33 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     }
 
     /**
-     * @return array|string[]
+     * @param string $secret
+     *
+     * @throws \Enlight_Controller_Exception
      */
-    public function getWhitelistedCSRFActions() {
-        return [
-            'import',
-        ];
+    private function verifySignature($secret) {
+        if (
+            !$this->makairaRequest->headers->has('x-makaira-nonce') ||
+            !$this->makairaRequest->headers->has('x-makaira-hash') ||
+            !in_array($this->params['action'], SELF::POSSIBLE_ACTIONS, true) ||
+            !method_exists($this, $this->params['action'])
+        ) {
+            throw new Enlight_Controller_Exception("Unauthorized", 401);
+        }
+
+        $signer = new Sha256();
+
+        $expected = $signer->hash(
+            $this->makairaRequest->headers->get('x-makaira-nonce'),
+            $this->makairaRequest->getContent(),
+            $secret
+        );
+
+        $current = $this->makairaRequest->headers->get('x-makaira-hash');
+
+        if (!hash_equals($expected, $current)) {
+            throw new Enlight_Controller_Exception("Forbidden", 403);
+        }
     }
 
     /**
@@ -104,12 +125,25 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     }
 
     /**
+     * @return array|string[]
+     */
+    public function getWhitelistedCSRFActions() {
+        return [
+            'import',
+        ];
+    }
+
+    /**
      * import action for makaira to connect to
      * See list of possible actions/methods in 'SELF::POSSIBLE_ACTIONS'
      */
     public function importAction() {
         Shopware()->Plugins()->Controller()->ViewRenderer()->setNoRender();
-        $this->{$this->params['action']};
+        $this->{$this->params['action']}();
+//        call_user_func([
+//            $this,
+//            $this->params['action']
+//        ]);
     }
 
     private function listLanguages() {
@@ -123,15 +157,8 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
         /** @var MakRevisionModel[] $revisions */
         $revisions = $makRevisionRepo->getRevisions($this->params['since'], $this->params['count']);
 
-        $result = [
-            'type'     => null,
-            'since'    => $this->params['since'],
-            'count'    => count($revisions),
-            'changes'  => [],
-            'language' => 'de',
-            'highLoad' => false,
-            'ok'       => true,
-        ];
+        /** @var array $result */
+        $result = $this->buildResponseHead(count($revisions));
 
         foreach ($revisions as $revision) {
             $changeResult = [
@@ -174,6 +201,35 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     }
 
     /**
+     * type             => always null
+     * since            => request->since
+     * indexName        => always null
+     * count            => response->revisionCount
+     * requestedCount   => request->count
+     * active           => always null
+     * language         => response->shop(Data)Language // should be the same as in request->language
+     * highLoad         => response->shopLoad -> false by default -> true when current shop is at high load
+     * changes          => response->data // product, variation. category, manufacturer
+     *
+     * @param $revisionCount int
+     * @return array
+     */
+    private function buildResponseHead($revisionCount) {
+        return [
+            'type'              => null,
+            'since'             => $this->params['since'],
+            'indexName'         => null,
+            'count'             => $revisionCount,
+            'requestedCount'    => $this->params['count'],
+            'active'            => null,
+            'language'          => 'de',    //logic to be implemented
+            'highLoad'          => false,   //logic to be implemented
+            //'ok'                => true, ?
+            'changes'           => [],
+        ];
+    }
+
+    /**
      * @param $data
      * @param $changeResult &array
      */
@@ -208,35 +264,5 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
             ->setParameter('id', $id);
 
         return $shopArticleQuery->getQuery()->getResult(self::HYDRATE_ARRAY);
-    }
-
-    /**
-     * @param string $secret
-     *
-     * @throws \Enlight_Controller_Exception
-     */
-    private function verifySignature($secret) {
-        if (
-            !$this->makairaRequest->headers->has('x-makaira-nonce') ||
-            !$this->makairaRequest->headers->has('x-makaira-hash') ||
-            !in_array($this->params['action'], SELF::POSSIBLE_ACTIONS, true) ||
-            !method_exists($this, $this->params['action'])
-        ) {
-            throw new Enlight_Controller_Exception("Unauthorized", 401);
-        }
-        
-        $signer = new Sha256();
-
-        $expected = $signer->hash(
-            $this->makairaRequest->headers->get('x-makaira-nonce'),
-            $this->makairaRequest->getContent(),
-            $secret
-        );
-
-        $current = $this->makairaRequest->headers->get('x-makaira-hash');
-
-        if (!hash_equals($expected, $current)) {
-            throw new Enlight_Controller_Exception("Forbidden", 403);
-        }
     }
 }
