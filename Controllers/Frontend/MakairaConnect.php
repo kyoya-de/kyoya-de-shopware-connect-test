@@ -40,6 +40,33 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     CONST POSSIBLE_ACTIONS = ['getUpdates', 'listLanguages'];
 
     /**
+     * Attribute maps
+     */
+    CONST MAP_CATEGORY = [
+//      [Makaira Attribute      => Shopware Attribute]
+//      Fields that can be mapped
+        'mak_category_title'    => 'name',
+        'mak_sort'              => 'position',
+        'mak_longdesc'          => 'cmsText',
+        'mak_meta_keywords'     => 'metaKeywords',
+        'mak_meta_description'  => 'metaDescription',
+        'id'                    => 'id',
+        'mak_active'            => 'active',
+        'active'                => 'active',
+        'shop'                  => 'shops',
+
+//      fields which require additional logic besides simple mapping
+        'timestamp'             => 'changed',   //changed->date
+        'depth'                 => 'path',      //count | -1
+        'url'                   => 'id',        //implode by path->name
+
+//      fields that cannot be mapped and their fore are left empty
+        'mak_shortdesc'         => '',
+        'hierarchy'             => '',
+        'subcategories'         => '',
+    ];
+
+    /**
      * @var \Symfony\Component\HttpFoundation\Request
      */
     private $makairaRequest;
@@ -50,7 +77,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     /** @var \Doctrine\ORM\EntityRepository */
     private $repo_supplier;
 
-    /** @var \Doctrine\ORM\EntityRepository */
+    /** @var \Shopware\Models\Category\Repository */
     private $repo_category;
 
     /** @var \Shopware\Components\Model\ModelManager */
@@ -146,10 +173,16 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
 //        ]);
     }
 
+    /**
+     * Will be called from 'importAction'
+     */
     private function listLanguages() {
 
     }
 
+    /**
+     * Will be called from 'importAction'
+     */
     private function getUpdates() {
         /** @var \MakairaConnect\Repositories\MakRevisionRepository $makRevisionRepo */
         $makRevisionRepo = Shopware()->Models()->getRepository(MakRevisionModel::class);
@@ -158,45 +191,40 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
         $revisions = $makRevisionRepo->getRevisions($this->params['since'], $this->params['count']);
 
         /** @var array $result */
-        $result = $this->buildResponseHead(count($revisions));
+        $response = $this->buildResponseHead(count($revisions));
 
         foreach ($revisions as $revision) {
-            $changeResult = [
-                'type'     => $revision->getType(),
-                'id'       => $revision->getId(),
-                'sequence' => $revision->getSequence(),
-                'data'     => [],
-                'deleted'  => true,
-            ];
-
             switch($revision->getType()) {
                 case 'product':
-                    $data = $this->fetchProducts($changeResult['id'], true);
+                    $data = $this->fetchProducts($revision->getId(), true);
                     break;
 
                 case 'variant':
-                    $data = $this->fetchProducts($changeResult['id'], false);
+                    $data = $this->fetchProducts($revision->getId(), false);
                     break;
 
                 case 'category':
-                    $data = $this->repo_category->findBy(['id' => $changeResult['id']]);
+                    $data = $this->fetchCategory($revision->getId());
                     break;
 
                 case 'manufacturer':
-                    $data = $this->repo_supplier->findBy(['id' => $changeResult['id']]);
+                    $data = $this->fetchManufacturer($revision->getId());
                     break;
             }
 
-            if($data) {
-                $this->saveObjectData($data, $changeResult);
+            $changes = $this->buildChangesHead($revision);
+
+            //enable data set for makaira
+            if(count($data)) {
+                $changes['deleted'] = false;
+                $changes['data'] = $data;
             }
 
-            $result['changes'][] = $changeResult;
+            $response['changes'][] = $changes;
         }
 
         $jsonResponse = new JsonResponse();
-        $jsonResponse->setData($result);
-
+        $jsonResponse->setData($response);
         $jsonResponse->send();
     }
 
@@ -230,13 +258,30 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     }
 
     /**
+     * id       => revision->id         (data object id)
+     * sequence => revision->sequence   (revision id)
+     * deleted  => as long assumed to be deleted as the object data set was not saved
+     * type     => revision->type
+     * data     => object data set
+     *
+     * @param $revision MakRevisionModel
+     * @return array
+     */
+    private function buildChangesHead($revision) {
+        return [
+            'id'       => $revision->getId(),
+            'sequence' => $revision->getSequence(),
+            'deleted'  => true,
+            'type'     => $revision->getType(),
+            'data'     => [],
+        ];
+    }
+
+    /**
      * @param $data
      * @param $changeResult &array
      */
     private function saveObjectData($data, &$changeResult) {
-        $changeResult['deleted'] = false;
-        $changeResult['data']    = $data;
-
         if($changeResult['type'] === 'product') {
             $changeResult['data']['id'] = $changeResult['data']['articleID'];
         } else if ($changeResult['type'] === 'variant') {
@@ -245,7 +290,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
     }
 
     /**
-     * @param $id string
+     * @param $id int
      * @param bool $getAllProducts
      * @return mixed
      */
@@ -256,13 +301,91 @@ class Shopware_Controllers_Frontend_MakairaConnect extends \Enlight_Controller_A
             $table = 'details';
         }
 
-        /** @var \Doctrine\ORM\QueryBuilder $shopArticleQuery */
-        $shopArticleQuery = $this->repo_article->createQueryBuilder('article')
+        /** @var \Doctrine\ORM\QueryBuilder $shopQuery */
+        $shopQuery = $this->repo_article->createQueryBuilder('article')
             ->select('article, details')
             ->innerJoin('article.details', 'details')
             ->where($table.'.id = :id')
             ->setParameter('id', $id);
 
-        return $shopArticleQuery->getQuery()->getResult(self::HYDRATE_ARRAY);
+        return $shopQuery->getQuery()->getResult(self::HYDRATE_ARRAY);
+    }
+
+    /**
+     * @param $id int
+     * @return array
+     */
+    private function fetchCategory($id) {
+        /** @var \Doctrine\ORM\QueryBuilder $shopQuery */
+        $shopQuery = $this->repo_category->createQueryBuilder('c')
+            ->select('c')
+            ->where('c.id = :id')
+            ->setParameter('id', $id)
+            ->setMaxResults(1);
+
+        $raw_changes = $shopQuery->getQuery()->getResult(self::HYDRATE_ARRAY);
+        $changes = $this->fetchMappedChanges(SELF::MAP_CATEGORY, $raw_changes);
+
+        $depth = substr_count($changes['depth'], '|');
+        $changes['depth']   = $depth ? $depth - 1 : '';
+        $changes['url']     = $this->getPath($changes['url']);
+
+        return $changes;
+    }
+
+    /**
+     * @param $id int
+     * @return array
+     */
+    private function fetchManufacturer($id) {
+        /** @var \Doctrine\ORM\QueryBuilder $shopQuery */
+        $shopQuery = $this->repo_supplier->createQueryBuilder('s')
+            ->select('s')
+            ->where('s.id = :id')
+            ->setParameter('id', $id)
+            ->setMaxResults(1);
+
+        $raw_changes = $shopQuery->getQuery()->getResult(self::HYDRATE_ARRAY);
+        return $this->fetchMappedChanges(SELF::MAP_CATEGORY, $raw_changes);
+    }
+
+    /**
+     * @param $map array
+     * @param $raw_changes array
+     * @return array
+     */
+    private function fetchMappedChanges($map, $raw_changes) {
+        if(count($raw_changes) !== 1) {
+            return [];
+        }
+
+        $mapped_changes = [];
+        $mapped_changes['additionalData'] = $raw_changes[0];
+
+        foreach($map as $makaira => $shopware) {
+            $mapped_changes[$makaira] = $raw_changes[0][$shopware];
+        }
+
+        $mapped_changes['timestamp'] = $mapped_changes['timestamp']->format('Y-m-d H:i:s');
+
+        return $mapped_changes;
+    }
+
+    /**
+     * The first path entry is the language, that may seem logically correct but:
+     * -> if that link would be called, shopware could not interpret it correctly
+     * -> the language never occurs within the browser link
+     * -> their fore we have to cut it off to get the real link to the category
+     *
+     * @param $id
+     * @return string
+     */
+    private function getPath($id) {
+        $path = $this->repo_category->getPathById($id);
+        array_shift($path);
+
+        return strtolower(
+            implode('/', $path)
+        ).'/';
     }
 }
