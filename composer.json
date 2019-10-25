@@ -5,9 +5,7 @@
     "installer-name": "MakairaConnect"
   },
   "require": {
-    "makaira/shared-libs": "^2019.7.0",
-    "marm/yamm": "@stable",
-    "doctrine/dbal": "^2.5"
+    "makaira/shared-libs": "^2019.7.0"
   },
   "repositories": [
     {
