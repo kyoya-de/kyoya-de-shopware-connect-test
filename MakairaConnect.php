@@ -11,79 +11,97 @@
 
 namespace MakairaConnect;
 
-use Shopware\Components\Plugin\Context\UninstallContext;
-use Shopware\Components\Plugin\Context\InstallContext;
-use Shopware\Components\Plugin;
 use Doctrine\ORM\Tools\SchemaTool;
-
+use MakairaConnect\DependencyInjection\MapperPoolCompilerPass;
 use MakairaConnect\Models\MakRevision as MakRevisionModel;
+use Shopware\Components\Plugin;
+use Shopware\Components\Plugin\Context\InstallContext;
+use Shopware\Components\Plugin\Context\UninstallContext;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
 }
 
-class MakairaConnect extends Plugin {
-  /**
-   * automatic called (from shopware system)
-   * Install plugin method
-   *
-   * @param InstallContext $installContext
-   * @return void
-   */
-  public function install(InstallContext $installContext) {
-    $this->installModels();
-  }
-
-  /**
-   * automatic called (from shopware system)
-   * Uninstall plugin method
-   *
-   * @param UninstallContext $unInstallContext
-   * @return void
-   */
-  public function uninstall(UninstallContext $unInstallContext) {
-    //abbortion if the user chose to keep the userdata
-    if ($unInstallContext->keepUserData()) {
-      return;
+class MakairaConnect extends Plugin
+{
+    /**
+     * automatic called (from shopware system)
+     * Install plugin method
+     *
+     * @param InstallContext $installContext
+     *
+     * @return void
+     */
+    public function install(InstallContext $installContext)
+    {
+        $this->installModels();
     }
 
-    $this->uninstallModels();
-  }
+    public function build(ContainerBuilder $container)
+    {
+        $container->addCompilerPass(new MapperPoolCompilerPass());
 
-  /**
-   * @return SchemaTool
-   */
-  private function fetchSchemaTool() {
-    $entityManager = $this->container->get('models');
-    return new SchemaTool($entityManager);
-  }
+        parent::build($container);
+    }
 
-  /**
-   * Installs all registered models
-   * -> make sure to use the save mode
-   */
-  private function installModels() {
-    $this->fetchSchemaTool()->updateSchema(
-      $this->getMappingClassesMetaData(),
-      true
-    );
-  }
+    /**
+     * Installs all registered models
+     * -> make sure to use the save mode
+     */
+    private function installModels()
+    {
+        $this->fetchSchemaTool()->updateSchema(
+            $this->getMappingClassesMetaData(),
+            true
+        );
+    }
 
-  /**
-   * Drops all registered models
-   */
-  private function uninstallModels () {
-    $this->fetchSchemaTool()->dropSchema(
-      $this->getMappingClassesMetaData()
-    );
-  }
+    /**
+     * @return SchemaTool
+     */
+    private function fetchSchemaTool()
+    {
+        $entityManager = $this->container->get('models');
 
-  /**
-   * @return array
-   */
-  private function getMappingClassesMetaData() {
-    return [
-      $this->container->get('models')->getClassMetadata(MakRevisionModel::class)
-    ];
-  }
+        return new SchemaTool($entityManager);
+    }
+
+    /**
+     * @return array
+     */
+    private function getMappingClassesMetaData()
+    {
+        return [
+            $this->container->get('models')->getClassMetadata(MakRevisionModel::class),
+        ];
+    }
+
+    /**
+     * automatic called (from shopware system)
+     * Uninstall plugin method
+     *
+     * @param UninstallContext $unInstallContext
+     *
+     * @return void
+     */
+    public function uninstall(UninstallContext $unInstallContext)
+    {
+        //abbortion if the user chose to keep the userdata
+        if ($unInstallContext->keepUserData()) {
+            return;
+        }
+
+        $this->uninstallModels();
+    }
+
+    /**
+     * Drops all registered models
+     */
+    private function uninstallModels()
+    {
+        $this->fetchSchemaTool()->dropSchema(
+            $this->getMappingClassesMetaData()
+        );
+    }
 }

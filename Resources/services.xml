@@ -16,5 +16,23 @@
             
             <tag name="doctrine.event_subscriber" />
         </service>
+
+        <service id="makaira_connect.mapper.product" class="MakairaConnect\Mapper\ProductMapper">
+            <tag name="makaira_connect.mapper" />
+        </service>
+
+        <service id="makaira_connect.mapper.variant" class="MakairaConnect\Mapper\VariantMapper">
+            <tag name="makaira_connect.mapper" />
+        </service>
+
+        <service id="makaira_connect.mapper.category" class="MakairaConnect\Mapper\CategoryMapper">
+            <tag name="makaira_connect.mapper" />
+        </service>
+
+        <service id="makaira_connect.mapper.manufacturer" class="MakairaConnect\Mapper\ManufacturerMapper">
+            <tag name="makaira_connect.mapper" />
+        </service>
+
+        <service id="makaira_connect.mapper" class="MakairaConnect\Mapper\MapperPool"/>
     </services>
 </container>

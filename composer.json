@@ -9,6 +9,11 @@
     "marm/yamm": "@stable",
     "doctrine/dbal": "^2.5"
   },
+  "autoload": {
+    "psr-4": {
+      "MakairaConnect\\": "./"
+    }
+  },
   "repositories": [
     {
       "type": "git",
