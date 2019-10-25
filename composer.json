@@ -1,5 +1,5 @@
 {
-  "name": "makaira/connect",
+  "name": "makaira/connect-shopware",
   "type": "shopware-plugin",
   "extra": {
     "installer-name": "MakairaConnect"
