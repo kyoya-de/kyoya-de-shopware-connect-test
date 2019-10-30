@@ -17,22 +17,13 @@
             <tag name="doctrine.event_subscriber" />
         </service>
 
-        <service id="makaira_connect.mapper.product" class="MakairaConnect\Mapper\ProductMapper">
-            <tag name="makaira_connect.mapper" />
+        <service id="makaira_connect.mapper" class="MakairaConnect\Mapper\EntityMapper" public="true">
+            <argument type="service" id="router"/>
+            <argument type="service" id="models"/>
+            <argument type="service" id="shopware_media.media_service"/>
+            <argument type="service" id="shopware_storefront.price_calculator"/>
+            <argument type="service" id="shopware_storefront.context_service"/>
         </service>
 
-        <service id="makaira_connect.mapper.variant" class="MakairaConnect\Mapper\VariantMapper">
-            <tag name="makaira_connect.mapper" />
-        </service>
-
-        <service id="makaira_connect.mapper.category" class="MakairaConnect\Mapper\CategoryMapper">
-            <tag name="makaira_connect.mapper" />
-        </service>
-
-        <service id="makaira_connect.mapper.manufacturer" class="MakairaConnect\Mapper\ManufacturerMapper">
-            <tag name="makaira_connect.mapper" />
-        </service>
-
-        <service id="makaira_connect.mapper" class="MakairaConnect\Mapper\MapperPool"/>
     </services>
 </container>

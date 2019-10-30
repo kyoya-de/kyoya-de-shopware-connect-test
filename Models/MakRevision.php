@@ -2,6 +2,7 @@
 
 namespace MakairaConnect\Models;
 
+use DateTime;
 use Shopware\Components\Model\ModelEntity;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -43,7 +44,7 @@ class MakRevision extends ModelEntity
     /**
      * Timestamp
      *
-     * @var \DateTime $changed
+     * @var DateTime $changed
      *
      * @ORM\Column(name="changed", type="datetime", nullable=false)
      */
@@ -53,7 +54,7 @@ class MakRevision extends ModelEntity
      * set default date
      */
     public function __construct() {
-      $this->changed = new \DateTime("now");
+      $this->changed = new DateTime('now');
     }
 
     /**
@@ -105,7 +106,7 @@ class MakRevision extends ModelEntity
     }
 
     /**
-     * @return \DateTime
+     * @return DateTime
      */
     public function getChanged()
     {
@@ -113,7 +114,7 @@ class MakRevision extends ModelEntity
     }
 
     /**
-     * @param \DateTime $changed
+     * @param DateTime $changed
      *
      * @return MakRevision
      */
