@@ -4,20 +4,22 @@ namespace MakairaConnect\Repositories;
 
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\OptimisticLockException;
+use Doctrine\ORM\ORMException;
 use Doctrine\ORM\Query\Expr\OrderBy;
+use Enlight_Hook;
 use MakairaConnect\Models\MakRevision as MakRevisionModel;
 
 /**
  * MakRevisionRepository
  */
-class MakRevisionRepository extends EntityRepository
+class MakRevisionRepository extends EntityRepository implements Enlight_Hook
 {
-
     /**
      * @param $type
      * @param $objectId
      *
      * @throws OptimisticLockException
+     * @throws ORMException
      */
     public function addRevision($type, $objectId)
     {
@@ -38,7 +40,7 @@ class MakRevisionRepository extends EntityRepository
     }
 
     /**
-     * @param     $lastRev
+     * @param int $lastRev
      * @param int $count
      *
      * @return MakRevisionModel[]

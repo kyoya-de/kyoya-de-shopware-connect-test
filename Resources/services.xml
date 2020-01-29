@@ -7,13 +7,13 @@
     <services>
         <service id="makaira_connect.subscriber.event.shopware"
                  class="MakairaConnect\Subscriber\ShopwareSubscriber">
-        
+
             <tag name="shopware.event_subscriber" />
         </service>
-        
+
         <service id="makaira_connect.subscriber.event.doctrine"
                  class="MakairaConnect\Subscriber\DoctrineSubscriber">
-            
+
             <tag name="doctrine.event_subscriber" />
         </service>
 
@@ -25,5 +25,8 @@
             <argument type="service" id="shopware_storefront.context_service"/>
         </service>
 
+        <service id="MakairaConnect\Command\TouchAllCommand">
+            <tag name="console.command" />
+        </service>
     </services>
 </container>
