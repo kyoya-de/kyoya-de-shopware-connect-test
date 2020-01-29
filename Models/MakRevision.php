@@ -35,9 +35,9 @@ class MakRevision extends ModelEntity
     /**
      * Id
      *
-     * @var integer $id
+     * @var string $id
      *
-     * @ORM\Column(name="id", type="integer", nullable=false)
+     * @ORM\Column(name="id", type="string", length=255, nullable=false)
      */
     private $id;
 

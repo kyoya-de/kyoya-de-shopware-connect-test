@@ -3,92 +3,101 @@
 namespace MakairaConnect\Subscriber;
 
 use Doctrine\Common\EventSubscriber;
-use MakairaConnect\Models\MakRevision;
-
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Events;
-
+use Doctrine\ORM\OptimisticLockException;
+use MakairaConnect\Models\MakRevision as MakRevisionModel;
 use Shopware\Models\Article\Article;
 use Shopware\Models\Article\Detail;
-use Shopware\Models\Category\Category;
 use Shopware\Models\Article\Supplier;
+use Shopware\Models\Category\Category;
+use function get_class;
+use function Shopware;
 
-use MakairaConnect\Models\MakRevision as MakRevisionModel;
-
-class DoctrineSubscriber implements EventSubscriber {
-    CONST INSTANCES = [
-        //Related to: PRODUCT
-        'product' => Article::class,
-        'variant' => Detail::class,
-
-        //Related to: CATEGORY
-        'category' => Category::class,
-
-        //Related to: MANUFACTURER
-        'manufacturer' => Supplier::class
+class DoctrineSubscriber implements EventSubscriber
+{
+    const INSTANCES = [
+        Article::class  => 'product',
+        Detail::class   => 'variant',
+        Category::class => 'category',
+        Supplier::class => 'manufacturer',
     ];
 
     /**
      * only add Events::<classes>
+     *
      * @return array
      */
-    public function getSubscribedEvents() {
+    public function getSubscribedEvents()
+    {
         return [
             Events::postUpdate,
             Events::postPersist,
             Events::preRemove,
-          ];
+        ];
     }
 
     /**
      * @param LifecycleEventArgs $arguments
+     *
+     * @throws OptimisticLockException
      */
-    public function postPersist(LifecycleEventArgs $arguments) {
-        $this->generateRevisionEntry('create', $arguments);
+    public function postPersist(LifecycleEventArgs $arguments)
+    {
+        $this->generateRevisionEntry($arguments);
     }
 
     /**
-     * @param LifecycleEventArgs $arguments
-     */
-    public function postUpdate(LifecycleEventArgs $arguments) {
-        $this->generateRevisionEntry('update', $arguments);
-    }
-
-    /**
-     * @param LifecycleEventArgs $arguments
-     */
-    public function preRemove(LifecycleEventArgs $arguments) {
-        $this->generateRevisionEntry('delete', $arguments);
-    }
-
-    /**
-     * @param $method string
+     * @param $method    string
      * @param $arguments LifecycleEventArgs
+     *
+     * @throws OptimisticLockException
      */
-    private function generateRevisionEntry($method, $arguments) {
+    private function generateRevisionEntry($arguments)
+    {
         $entity = $arguments->getEntity();
-        $type = $this->checkInstance($entity);
-        if(!$type) {
-            return;
+        if ($type = $this->checkInstance($entity)) {
+            $id = $entity->getId();
+            if ($entity instanceof Detail) {
+                $id = $entity->getNumber();
+            }
+
+            if ($entity instanceof Article) {
+                $id = $entity->getMainDetail()->getNumber();
+            }
+
+            $makRevisionRepo = Shopware()->Models()->getRepository(MakRevisionModel::class);
+            $makRevisionRepo->addRevision($type, $id);
         }
-
-        /** @var Article|Detail|Category|Supplier $entity */
-
-        $makRevisionRepo = Shopware()->Models()->getRepository(MakRevisionModel::class);
-        $makRevisionRepo->addRevision($type, $entity->getId());
     }
 
     /**
      * @param $entity Object
+     *
      * @return bool|string
      */
-    private function checkInstance($entity) {
-        foreach (self::INSTANCES as $type => $instance) {
-            if($entity instanceof $instance) {
-                return $type;
-            }
-        }
+    private function checkInstance($entity)
+    {
+        return self::INSTANCES[get_class($entity)] ?? false;
+    }
 
-        return false;
+    /**
+     * @param LifecycleEventArgs $arguments
+     *
+     * @throws OptimisticLockException
+     */
+    public function postUpdate(LifecycleEventArgs $arguments)
+    {
+        $this->generateRevisionEntry($arguments);
+    }
+
+    /**
+     * @param LifecycleEventArgs $arguments
+     *
+     * @throws OptimisticLockException
+     */
+    public function preRemove(LifecycleEventArgs $arguments)
+    {
+        $this->generateRevisionEntry($arguments);
     }
 }

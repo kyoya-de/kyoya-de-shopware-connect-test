@@ -1,16 +1,23 @@
 <?php
 
 use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\QueryBuilder;
+use Doctrine\ORM\Query\Expr\Join;
 use Makaira\Signing\Hash\Sha256;
 use MakairaConnect\Mapper;
 use MakairaConnect\Models\MakRevision as MakRevisionModel;
 use MakairaConnect\Repositories\MakRevisionRepository;
+use Shopware\Bundle\StoreFrontBundle\Service\Core\CategoryService;
+use Shopware\Bundle\StoreFrontBundle\Service\Core\ConfiguratorService;
+use Shopware\Bundle\StoreFrontBundle\Service\Core\ContextService;
+use Shopware\Bundle\StoreFrontBundle\Service\Core\ManufacturerService;
+use Shopware\Bundle\StoreFrontBundle\Service\Core\ProductService;
+use Shopware\Bundle\StoreFrontBundle\Service\Core\PropertyService;
+use Shopware\Bundle\StoreFrontBundle\Struct\Category;
+use Shopware\Bundle\StoreFrontBundle\Struct\Product;
 use Shopware\Components\CSRFWhitelistAware;
-use Shopware\Models\Article\Article as ArticleModel;
-use Shopware\Models\Article\Detail;
-use Shopware\Models\Article\Supplier as SupplierModel;
-use Shopware\Models\Category\Category as CategoryModel;
+use Shopware\Components\Model\ModelManager;
+use Shopware\Models\Shop\Repository;
+use Shopware\Models\Shop\Shop;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -43,8 +50,11 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     /** @var array */
     private $config = [];
 
+    private $productContext;
+
     /**
      * @throws Enlight_Controller_Exception
+     * @throws Exception
      */
     public function preDispatch()
     {
@@ -54,9 +64,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
 
         $this->makairaRequest = Request::createFromGlobals();
 
-        if ('json' === $this->makairaRequest->getContentType()) {
-            $body = $this->makairaRequest->getContent();
-            $decoded = json_decode($body, true);
+        if (null !== ($decoded = json_decode($this->makairaRequest->getContent(), true))) {
             $this->makairaRequest->request->replace($decoded);
         }
 
@@ -64,6 +72,38 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         $this->config = $configReader->getByPluginName('MakairaConnect');
 
         $this->verifySignature($this->config['makaira_connect_secret']);
+
+        /** @var ContextService $contextService */
+        $contextService       = $this->get('shopware_storefront.context_service');
+
+        /** @var Shop $shop */
+        $shop = $this->get('shop');
+        $shopId = $shop->getId();
+        if (null !== ($mainShop = $shop->getMain())) {
+            $shopId = $mainShop->getId();
+        }
+
+        /** @var Repository $shopRepo */
+        $shopRepo = $this->get('models')->getRepository(Shop::class);
+        $qb = $shopRepo->createQueryBuilder('s');
+        $qb->select('s.id')
+            ->leftJoin(\Shopware\Models\Shop\Locale::class, 'l', Join::WITH, 's.locale = l.id')
+            ->where(
+                $qb->expr()->andX(
+                    $qb->expr()->eq('l.locale', '?1'),
+                    $qb->expr()->orX(
+                        $qb->expr()->eq('s.id', '?2'),
+                        $qb->expr()->eq('s.mainId', '?2')
+                    )
+                )
+            )
+            ->setParameter(1, $this->makairaRequest->request->get('language', 'de_DE'))
+            ->setParameter(2, $shopId);
+
+        $query = $qb->getQuery();
+        $contextShopId = (int) $query->getSingleScalarResult();
+
+        $this->productContext = $contextService->createProductContext($contextShopId);
     }
 
     /**
@@ -167,7 +207,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         }
 
         /** @var array $result */
-        $response = $this->buildResponseHead(array_merge(...$changes));
+        $response = $this->buildResponseHead((array) array_merge(...$changes));
 
         $jsonResponse = new JsonResponse();
         $jsonResponse->setData($response);
@@ -180,89 +220,145 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
      * @return array
      * @throws Exception
      */
-    protected function fetchProducts(array $revisions): array
-    {
-        $repo = $this->em->getRepository(ArticleModel::class);
-
-        $productIds = $this->extractIds($revisions);
-
-        /** @var QueryBuilder $qb */
-        $qb = $repo->createQueryBuilder('article');
-        $query = $qb
-            ->select('article, details')
-            ->innerJoin('article.details', 'details')
-            ->where($qb->expr()->in('article.id', $productIds))
-            ->getQuery();
-
-        /** @var ArticleModel[] $products */
-        $products = $query->getResult();
-
-        $loadedIds = $this->extractIds($products);
-
-        /** @var Mapper\EntityMapper $mapper */
-        $mapper = $this->get('makaira_connect.mapper');
-
-        $changes = [];
-        $changes[] = array_map(
-            function (ArticleModel $product) use ($revisions, $mapper) {
-                return $this->buildChangesHead($revisions[$product->getId()], $mapper->mapProduct($product));
-            },
-            $products
-        );
-
-        $deletedIds = array_diff($productIds, $loadedIds);
-        $changes[] = array_map(
-            function ($deletedId) use ($revisions) {
-                return $this->buildChangesHead($revisions[$deletedId]);
-            },
-            $deletedIds
-        );
-
-        return (array) array_merge(...$changes);
-    }
-
-    /**
-     * @param MakRevisionModel[] $revisions
-     *
-     * @return array
-     * @throws Exception
-     */
     protected function fetchVariants(array $revisions): array
     {
-        $repo = $this->em->getRepository(Detail::class);
-
         $productIds = $this->extractIds($revisions);
 
-        /** @var QueryBuilder $qb */
-        $qb = $repo->createQueryBuilder('details');
-        $query = $qb
-            ->select('details')
-            ->innerJoin('details.article', 'article')
-            ->where($qb->expr()->in('details.id', $productIds))
-            ->getQuery();
+        /** @var ProductService $productService */
+        $productService = $this->get('shopware_storefront.product_service');
+        /** @var PropertyService $propertyService */
+        $propertyService = $this->get('shopware_storefront.property_service');
 
-        /** @var Detail[] $details */
-        $details = $query->getResult();
+        $products = $productService->getList($productIds, $this->productContext);
 
-        $loadedIds = $this->extractIds($details);
+        $loadedIds = $this->extractIds(
+            $products,
+            static function ($entity) {
+                return $entity->getNumber();
+            }
+        );
 
         /** @var Mapper\EntityMapper $mapper */
         $mapper = $this->get('makaira_connect.mapper');
 
-        $changes = [];
-        $changes[] = array_map(
-            function (Detail $detail) use ($revisions, $mapper) {
-                return $this->buildChangesHead($revisions[$detail->getId()], $mapper->mapVariant($detail));
-            },
-            $details
-        );
+        $changes = [
+            array_map(
+                function (Product $detail) use ($revisions, $mapper, $propertyService) {
+                    return $this->buildChangesHead(
+                        $revisions[$detail->getNumber()],
+                        $mapper->mapVariant(
+                            $detail,
+                            $this->productContext,
+                            $propertyService->getList([$detail], $this->productContext)
+                        )
+                    );
+                },
+                array_values($products)
+            ),
+        ];
 
         $deletedIds = array_diff($productIds, $loadedIds);
-        $changes[] = array_map(
+        $changes[]  = array_map(
             function ($deletedId) use ($revisions) {
                 return $this->buildChangesHead($revisions[$deletedId]);
             },
-            $deletedIds
+            array_values($deletedIds)
+        );
+
+        return (array) array_merge(...$changes);
+    }
+
+    /**
+     * @param array         $entities
+     * @param null|callable $extractFnc
+     *
+     * @return array
+     */
+    private function extractIds(array $entities, $extractFnc = null): array
+    {
+        if (null === $extractFnc || !is_callable($extractFnc)) {
+            $extractFnc = static function ($entity) {
+                return method_exists($entity, 'getId') ? $entity->getId() : $entity;
+            };
+        }
+
+        return array_map($extractFnc, $entities);
+    }
+
+    /**
+     * id       => revision->id         (data object id)
+     * sequence => revision->sequence   (revision id)
+     * deleted  => as long assumed to be deleted as the object data set was not saved
+     * type     => revision->type
+     * data     => object data set
+     *
+     * @param MakRevisionModel $revision
+     * @param array            $data
+     *
+     * @return array
+     */
+    private function buildChangesHead(MakRevisionModel $revision, array $data = []): array
+    {
+        return [
+            'id'       => $revision->getId(),
+            'sequence' => $revision->getSequence(),
+            'deleted'  => [] === $data,
+            'type'     => $revision->getType(),
+            'data'     => $data,
+        ];
+    }
+
+    /**
+     * @param MakRevisionModel[] $revisions
+     *
+     * @return array
+     * @throws Exception
+     */
+    protected function fetchProducts(array $revisions): array
+    {
+        $productIds = $this->extractIds($revisions);
+
+        /** @var ContextService $contextService */
+        $contextService = $this->get('shopware_storefront.context_service');
+        /** @var ProductService $productService */
+        $productService = $this->get('shopware_storefront.product_service');
+        /** @var ConfiguratorService $configuratorService */
+        $configuratorService = $this->get('shopware_storefront.configurator_service');
+
+        $products = $productService->getList($productIds, $this->productContext);
+
+        $loadedIds = $this->extractIds(
+            $products,
+            static function ($entity) {
+                return $entity->getNumber();
+            }
+        );
+
+        /** @var Mapper\EntityMapper $mapper */
+        $mapper = $this->get('makaira_connect.mapper');
+
+        $changes = [
+            array_map(
+                function (Product $product) use ($revisions, $mapper, $configuratorService) {
+                    return $this->buildChangesHead(
+                        $revisions[$product->getNumber()],
+                        $mapper->mapProduct(
+                            $product,
+                            $this->productContext,
+                            $configuratorService->getProductConfigurator($product, $this->productContext, [])
+                        )
+                    );
+                },
+                array_values($products)
+            ),
+        ];
+
+        $deletedIds = array_diff($productIds, $loadedIds);
+        $changes[]  = array_map(
+            function ($deletedId) use ($revisions) {
+                return $this->buildChangesHead($revisions[$deletedId]);
+            },
+            array_values($deletedIds)
         );
 
         return (array) array_merge(...$changes);
@@ -274,34 +370,28 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
      * @return array
      * @throws Exception
      */
-    private function fetchCategories(array $revisions): array
+    protected function fetchCategories(array $revisions): array
     {
-        $repo = $this->em->getRepository(CategoryModel::class);
-        $qb = $repo->createQueryBuilder('c');
-
         $categoryIds = $this->extractIds($revisions);
 
-        $shopQuery  = $qb
-            ->select('c')
-            ->where($qb->expr()->in('c.id', $categoryIds))
-            ->getQuery();
-
-        /** @var CategoryModel[] $categories */
-        $categories = $shopQuery->getResult();
+        /** @var CategoryService $categoryService */
+        $categoryService = $this->get('shopware_storefront.category_service');
+        $categories      = $categoryService->getList($categoryIds, $this->productContext);
 
         /** @var Mapper\EntityMapper $mapper */
         $mapper = $this->get('makaira_connect.mapper');
 
-        $changes = [];
-        $changes[] = array_map(
-            function (CategoryModel $category) use ($revisions, $mapper) {
+        $changes   = [
+            array_map(
+            function (Category $category) use ($revisions, $mapper) {
                 return $this->buildChangesHead(
                     $revisions[$category->getId()],
-                    $mapper->mapCategory($category)
+                    $mapper->mapCategory($category, $this->productContext)
                 );
             },
             $categories
-        );
+        )
+        ];
 
         $loadedIds = $this->extractIds($categories);
 
@@ -310,6 +400,46 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
                 return $this->buildChangesHead($revisions[$deletedId]);
             },
             array_diff($categoryIds, $loadedIds)
+        );
+
+        return (array) array_merge(...$changes);
+    }
+
+    /**
+     * @param MakRevisionModel[] $revisions
+     *
+     * @return array
+     * @throws Exception
+     */
+    protected function fetchManufacturer(array $revisions): array
+    {
+        $ids = $this->extractIds($revisions);
+
+        /** @var ManufacturerService $categoryService */
+        $categoryService = $this->get('shopware_storefront.manufacturer_service');
+        $suppliers = $categoryService->getList($ids, $this->productContext);
+
+        /** @var Mapper\EntityMapper $mapper */
+        $mapper = $this->get('makaira_connect.mapper');
+
+        $changes   = [];
+        $changes[] = array_map(
+            function (Product\Manufacturer $supplier) use ($revisions, $mapper) {
+                return $this->buildChangesHead(
+                    $revisions[$supplier->getId()],
+                    $mapper->mapManufacturer($supplier, $this->productContext)
+                );
+            },
+            $suppliers
+        );
+
+        $loadedIds = $this->extractIds($suppliers);
+
+        $changes[] = array_map(
+            function ($deletedId) use ($revisions) {
+                return $this->buildChangesHead($revisions[$deletedId]);
+            },
+            array_diff($ids, $loadedIds)
         );
 
         return (array) array_merge(...$changes);
@@ -344,88 +474,5 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
             //'ok'                => true, ?
             'changes'        => $changes,
         ];
-    }
-
-    /**
-     * @param MakRevisionModel[] $revisions
-     *
-     * @return array
-     * @throws Exception
-     */
-    private function fetchManufacturer(array $revisions): array
-    {
-        $ids = $this->extractIds($revisions);
-
-        $repo = $this->em->getRepository(SupplierModel::class);
-
-        $qb = $repo->createQueryBuilder('s');
-        $shopQuery = $qb
-            ->select('s')
-            ->where($qb->expr()->in('s.id', $ids))
-            ->getQuery();
-
-        $suppliers = $shopQuery->getResult();
-
-        /** @var Mapper\EntityMapper $mapper */
-        $mapper = $this->get('makaira_connect.mapper');
-
-        $changes = [];
-        $changes[] = array_map(
-            function (SupplierModel $supplier) use ($revisions, $mapper) {
-                return $this->buildChangesHead($revisions[$supplier->getId()], $mapper->mapManufacturer($supplier));
-            },
-            $suppliers
-        );
-
-        $loadedIds = $this->extractIds($suppliers);
-
-        $changes[] = array_map(
-            function ($deletedId) use ($revisions) {
-                return $this->buildChangesHead($revisions[$deletedId]);
-            },
-            array_diff($ids, $loadedIds)
-        );
-
-        return (array) array_merge(...$changes);
-    }
-
-    /**
-     * id       => revision->id         (data object id)
-     * sequence => revision->sequence   (revision id)
-     * deleted  => as long assumed to be deleted as the object data set was not saved
-     * type     => revision->type
-     * data     => object data set
-     *
-     * @param MakRevisionModel $revision
-     * @param array            $data
-     *
-     * @return array
-     */
-    private function buildChangesHead(MakRevisionModel $revision, array $data = []): array
-    {
-        return [
-            'id'       => $revision->getId(),
-            'sequence' => $revision->getSequence(),
-            'deleted'  => [] === $data,
-            'type'     => $revision->getType(),
-            'data'     => $data,
-        ];
-    }
-
-    /**
-     * @param array         $entities
-     * @param null|callable $extractFnc
-     *
-     * @return array
-     */
-    private function extractIds(array $entities, $extractFnc = null): array
-    {
-        if (null === $extractFnc || !is_callable($extractFnc)) {
-            $extractFnc = static function ($entity) {
-                return method_exists($entity, 'getId') ? $entity->getId() : $entity;
-            };
-        }
-
-        return array_map($extractFnc, $entities);
     }
 }

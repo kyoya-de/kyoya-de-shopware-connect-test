@@ -8,14 +8,19 @@ use Exception;
 use Shopware\Bundle\MediaBundle\MediaServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Service\ContextServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Service\PriceCalculatorInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\Tax;
+use Shopware\Bundle\StoreFrontBundle\Struct\Category as CategoryStruct;
+use Shopware\Bundle\StoreFrontBundle\Struct\Configurator\Set;
+use Shopware\Bundle\StoreFrontBundle\Struct\Product;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContext;
 use Shopware\Components\Routing\RouterInterface;
-use Shopware\Models\Article\Article;
-use Shopware\Models\Article\Detail;
-use Shopware\Models\Article\Image;
-use Shopware\Models\Article\Supplier;
 use Shopware\Models\Category\Category;
 use Shopware\Models\Shop\Shop;
+use function array_map;
+use function array_merge;
+use function array_pop;
+use function array_values;
+use function count;
+use function str_replace;
 
 class EntityMapper
 {
@@ -89,21 +94,23 @@ class EntityMapper
     }
 
     /**
-     * @param Category $category
+     * @param CategoryStruct $category
      *
      * @return array
      */
-    public function mapCategory(Category $category): array
+    public function mapCategory(CategoryStruct $category, ShopContext $context): array
     {
-        if (!isset(self::$childrenCache[$category->getPath()])) {
+        $path = implode('|', $category->getPath());
+        if (!isset(self::$childrenCache[$path])) {
             $repo  = $this->em->getRepository(Category::class);
             $qb    = $repo->createQueryBuilder('c');
-            $query = $qb->select('c.id')->where($qb->expr()->like('c.path', ':path'))->setParameter(
-                'path',
-                str_replace('||', '|', "%|{$category->getId()}{$category->getPath()}|")
-            )->getQuery();
+            $query =
+                $qb->select('c.id')->where($qb->expr()->like('c.path', ':path'))->setParameter(
+                        'path',
+                        str_replace('||', '|', "%|{$category->getId()}|{$path}|")
+                    )->getQuery();
 
-            self::$childrenCache[$category->getPath()] = array_map(
+            self::$childrenCache[$path] = array_map(
                 static function ($id) {
                     return (int) $id;
                 },
@@ -111,19 +118,9 @@ class EntityMapper
             );
         }
 
-        $trimmedPath = trim($category->getPath(), '|');
+        $trimmedPath = trim($path, '|');
         $reversePath = array_reverse(explode('|', $trimmedPath));
         $path        = implode('|', $reversePath);
-
-        $shops = $this->allShops;
-        if ($category->getShops()) {
-            $shops = array_map(
-                static function ($id) {
-                    return (int) $id;
-                },
-                explode('|', trim($category->getShops(), '|'))
-            );
-        }
 
         $url = (string) $this->router->assemble(
             [
@@ -134,7 +131,7 @@ class EntityMapper
 
         return [
             'id'               => $category->getId(),
-            'active'           => (bool) $category->getActive(),
+            'active'           => true,
             'hidden'           => false,
             'sort'             => (int) $category->getPosition(),
             'category_title'   => (string) $category->getName(),
@@ -144,8 +141,8 @@ class EntityMapper
             'meta_description' => (string) $category->getMetaDescription(),
             'hierarchy'        => str_replace('|', '//', $path),
             'depth'            => substr_count($path, '|') + 1,
-            'subcategories'    => self::$childrenCache[$category->getPath()],
-            'shop'             => $shops,
+            'subcategories'    => self::$childrenCache[$path],
+            'shop'             => [$context->getShop()->getId()],
             'timestamp'        => $this->now,
             'url'              => $url,
             'additionalData'   => '',
@@ -153,11 +150,12 @@ class EntityMapper
     }
 
     /**
-     * @param Supplier $supplier
+     * @param Product\Manufacturer $supplier
+     * @param ShopContext          $context
      *
      * @return array
      */
-    public function mapManufacturer(Supplier $supplier): array
+    public function mapManufacturer(Product\Manufacturer $supplier, ShopContext $context): array
     {
         return [
             'id'                 => $supplier->getId(),
@@ -166,48 +164,98 @@ class EntityMapper
             'meta_keywords'      => $supplier->getMetaKeywords(),
             'meta_description'   => $supplier->getMetaDescription(),
             'timestamp'          => $this->now,
-            'url'                => $this->router->assemble(
-                [
-                    'sViewport' => 'listing',
-                    'sAction'   => 'manufacturer',
-                    'sSupplier' => $supplier->getId(),
-                ]
-            ),
+            'url'                => $supplier->getLink(),
             'active'             => true,
-            'shop'               => $this->allShops,
-            'additionalData'     => '',
+            'shop'               => [$context->getShop()->getId()],
+            'additionalData'     => [
+                'metaTitle'       => $supplier->getMetaTitle(),
+            ],
         ];
     }
 
     /**
-     * @param Article $article
+     * @param Product     $article
+     * @param ShopContext $context
+     * @param Set         $configurator
      *
      * @return array
      */
-    public function mapProduct(Article $article): array
+    public function mapProduct(Product $article, ShopContext $context, Set $configurator): array
+    {
+        $mapped = $this->mapCommonProductData($article, $context, false);
+
+        if (null !== ($properties = $article->getPropertySet())) {
+            foreach ($properties->getGroups() as $group) {
+                foreach ($group->getOptions() as $option) {
+                    $mapped['attribute'][$group->getId()][] = $option->getName();
+                    $mapped['attributeStr'][]               = [
+                        'id'    => $group->getId(),
+                        'title' => $group->getName() . ' (property)',
+                        'value' => $option->getName(),
+
+                    ];
+                }
+            }
+        }
+
+        foreach ($configurator->getGroups() as $group) {
+            foreach ($group->getOptions() as $option) {
+                $mapped['attribute'][$group->getId()][] = $option->getName();
+                $mapped['attributeStr'][]               = [
+                    'id'    => $group->getId(),
+                    'title' => $group->getName() . ' (variant)',
+                    'value' => $option->getName(),
+                ];
+            }
+        }
+
+        return $mapped;
+    }
+
+    /**
+     * @param Product     $detail
+     * @param ShopContext $context
+     * @param bool        $asVariant
+     *
+     * @return array
+     */
+    protected function mapCommonProductData(Product $detail, ShopContext $context, $asVariant): array
     {
         $router = $this->router;
         $url    = (string) $router->assemble(
             [
                 'sViewport' => 'detail',
-                'sArticle'  => $article->getId(),
+                'sArticle'  => $detail->getId(),
             ]
         );
 
-        $mainDetail = $article->getMainDetail();
-
         $imageUrl = '';
-
-        $images = $article->getImages();
-        if (0 < $images->count()) {
-            /** @var Image $image */
-            $image = $images->first();
-
-            $imageUrl = $this->mediaService->getUrl("media/image/{$image->getPath()}.{$image->getExtension()}");
+        $images   = $detail->getMedia();
+        if (0 < count($images)) {
+            foreach ($images as $image) {
+                if ('IMAGE' === $image->getType()) {
+                    $imageUrl = $image->getFile();
+                    break;
+                }
+            }
         }
 
-        $categories   = $article->getCategories();
-        $mainCategory = $categories->first();
+        $categories    = $detail->getCategories();
+        $allCategories = array_map(
+            function (CategoryStruct $category) use ($context) {
+                return [
+                    'catid'  => $category->getId(),
+                    'title'  => $category->getName(),
+                    'path'   => $this->getPath(
+                        $this->router->assemble(['sViewport' => 'cat', 'sCategory' => $category->getId()])
+                    ),
+                    // TODO Replace hardcoded Shop-ID.
+                    'shopid' => [$context->getShop()->getId()],
+                ];
+            },
+            $categories
+        );
+        $mainCategory  = array_pop($categories);
 
         $mainCategoryUrl = (string) $router->assemble(
             [
@@ -216,176 +264,36 @@ class EntityMapper
             ]
         );
 
-        $categories = array_map(
-            function (Category $category) {
-                return [
-                    'catid'  => $category->getId(),
-                    'title'  => $category->getName(),
-                    'path'   => $this->getPath(
-                        $this->router->assemble(['sViewport' => 'cat', 'sCategory' => $category->getId()])
-                    ),
-                    'shopid' => $this->getShopIds($category->getShops()),
-                ];
-            },
-            $article->getCategories()->toArray()
-        );
+        $price = $detail->getVariantPrice()->getCalculatedPrice();
 
-        $sum = array_reduce(
-            $article->getDetails()->toArray(),
-            static function ($carry, Detail $item) {
-                return $carry + $item->getInStock();
-            },
-            0.0
-        );
-
-        $price = 0.0;
-        if ($mainDetail) {
-            $taxRule = $this->shopContext->getTaxRule($article->getTax()->getId()) ?? new Tax();
-            $price   = $this->priceCalculator->calculatePrice(
-                $mainDetail->getPrices()->first()->getPrice(),
-                $taxRule,
-                $this->shopContext
-            );
-        }
-
-        return [
-            'id'                           => $article->getId(),
-            'parent'                       => '',
-            'shop'                         => $this->allShops,
-            'ean'                          => $mainDetail ? $mainDetail->getNumber() : '',
-            'activeto'                     => $article->getAvailableTo() ?
-                $article->getAvailableTo()->format('Y-m-d H:i:s') :
-                '',
-            'activefrom'                   => $article->getAvailableFrom() ?
-                $article->getAvailableFrom()->format('Y-m-d H:i:s') :
-                '',
-            'isVariant'                    => false,
-            'active'                       => $article->getActive(),
-            'sort'                         => $mainDetail ? $mainDetail->getPosition() : 0,
-            'stock'                        => $sum,
-            'onstock'                      => $sum > 0,
-            'picture_url_main'             => $imageUrl,
-            'title'                        => $article->getName(),
-            'shortdesc'                    => $article->getDescription(),
-            'longdesc'                     => $article->getDescriptionLong(),
-            'price'                        => $price,
-            'soldamount'                   => 0,
-            'searchable'                   => true,
-            'searchkeys'                   => '',
-            'meta_keywords'                => $article->getKeywords(),
-            'meta_description'             => $article->getDescription(),
-            'manufacturerid'               => $article->getSupplier()->getId(),
-            'manufacturer_title'           => $article->getSupplier()->getName(),
-            'url'                          => $url,
-            'maincategory'                 => $mainCategory->getId(),
-            'maincategoryurl'              => $mainCategoryUrl,
-            'category'                     => $categories,
-            'attributes'                   => [],
-            'attributeStr'                 => [],
-            'attributeInt'                 => [],
-            'attributeFloat'               => [],
-            'mak_boost_norm_insert'        => 0.0,
-            'mak_boost_norm_sold'          => 0.0,
-            'mak_boost_norm_rating'        => 0.0,
-            'mak_boost_norm_revenue'       => 0.0,
-            'mak_boost_norm_profit_margin' => 0.0,
-            'timestamp'                    => $this->now,
-            'additionalData'               => [
-                'ean2' => $mainDetail ? $mainDetail->getEan() : '',
-            ],
-        ];
-    }
-
-    /**
-     * @param Detail $detail
-     *
-     * @return array
-     */
-    public function mapVariant(Detail $detail): array
-    {
-        $article = $detail->getArticle();
-
-        $url = (string) $this->router->assemble(
-            [
-                'sViewport' => 'detail',
-                'sArticle'  => $article->getId(),
-            ]
-        );
-
-        $imageUrl = '';
-
-        $images = $article->getImages();
-        if (0 < $images->count()) {
-            /** @var Image $image */
-            $image = $images->first();
-
-            $imageUrl = $this->mediaService->getUrl("media/image/{$image->getPath()}.{$image->getExtension()}");
-        }
-
-        $categories   = $article->getCategories();
-        $mainCategory = $categories->first();
-
-        $mainCategoryUrl = (string) $this->router->assemble(
-            [
-                'sViewport' => 'cat',
-                'sCategory' => $mainCategory->getId(),
-            ]
-        );
-
-        $taxRule = $this->shopContext->getTaxRule($article->getTax()->getId()) ?? new Tax();
-        $price   = $this->priceCalculator->calculatePrice(
-            $detail->getPrices()->first()->getPrice(),
-            $taxRule,
-            $this->shopContext
-        );
-
-        $categories = array_map(
-            function (Category $category) {
-                return [
-                    'catid'  => $category->getId(),
-                    'title'  => $category->getName(),
-                    'path'   => $this->getPath(
-                        $this->router->assemble(['sViewport' => 'cat', 'sCategory' => $category->getId()])
-                    ),
-                    'shopid' => $this->getShopIds($category->getShops()),
-                ];
-            },
-            $article->getCategories()->toArray()
-        );
-
-        return [
-            'id'                           => $detail->getId(),
-            'parent'                       => $article->getId(),
-            'shop'                         => $this->allShops,
+        $rawData = [
+            'id'                           => $detail->getVariantId(),
+            'parent'                       => $detail->getId(),
+            'shop'                         => [$context->getShop()->getId()],
             'ean'                          => $detail->getNumber(),
-            'activeto'                     => $article->getAvailableTo() ?
-                $article->getAvailableTo()->format('Y-m-d H:i:s') :
-                '',
-            'activefrom'                   => $article->getAvailableFrom() ?
-                $article->getAvailableFrom()->format('Y-m-d H:i:s') :
-                '',
-            'isVariant'                    => true,
-            'active'                       => $article->getActive(),
-            'sort'                         => $detail->getPosition(),
-            'stock'                        => $detail->getInStock(),
-            'onstock'                      => $detail->getInStock() > 0,
+            'activeto'                     => '',
+            'activefrom'                   => '',
+            'isVariant'                    => $asVariant,
+            'active'                       => $detail->isAvailable(),
+            'sort'                         => 0,
+            'stock'                        => $detail->getStock(),
+            'onstock'                      => $detail->getStock() > 0,
             'picture_url_main'             => $imageUrl,
-            'title'                        => $article->getName(),
-            'shortdesc'                    => $article->getDescription(),
-            'longdesc'                     => $article->getDescriptionLong(),
+            'title'                        => $detail->getName(),
+            'shortdesc'                    => $detail->getShortDescription(),
+            'longdesc'                     => $detail->getLongDescription(),
             'price'                        => $price,
             'soldamount'                   => 0,
             'searchable'                   => true,
             'searchkeys'                   => '',
-            'meta_keywords'                => $article->getKeywords(),
-            'meta_description'             => $article->getDescription(),
-            'manufacturerid'               => $article->getSupplier()->getId(),
-            'manufacturer_title'           => $article->getSupplier()->getName(),
+            'meta_keywords'                => $detail->getKeywords(),
+            'meta_description'             => $detail->getShortDescription(),
+            'manufacturerid'               => $detail->getManufacturer()->getId(),
+            'manufacturer_title'           => $detail->getManufacturer()->getName(),
             'url'                          => $url,
             'maincategory'                 => $mainCategory->getId(),
             'maincategoryurl'              => $mainCategoryUrl,
-            'category'                     => $categories,
-            'attributes'                   => [],
+            'category'                     => $allCategories,
             'attributeStr'                 => [],
             'attributeInt'                 => [],
             'attributeFloat'               => [],
@@ -399,25 +307,12 @@ class EntityMapper
                 'ean2' => $detail->getEan(),
             ],
         ];
-    }
 
-    /**
-     * @param string|null $shops
-     *
-     * @return array
-     */
-    private function getShopIds(?string $shops): array
-    {
-        if (null === $shops) {
-            return $this->allShops;
+        if (!$asVariant) {
+            $rawData['attribute'] = [];
         }
 
-        return array_map(
-            static function ($shop) {
-                return (int) $shop;
-            },
-            explode('|', trim($shops, '|'))
-        );
+        return $rawData;
     }
 
     /**
@@ -431,5 +326,41 @@ class EntityMapper
             parse_url($url, PHP_URL_PATH),
             '/'
         );
+    }
+
+    /**
+     * @param Product     $detail
+     * @param ShopContext $context
+     * @param Set[]       $propertySets
+     *
+     * @return array
+     */
+    public function mapVariant(Product $detail, ShopContext $context, array $propertySets): array
+    {
+        $mapped = $this->mapCommonProductData($detail, $context, true);
+
+        foreach ($propertySets as $propertySet) {
+            foreach ($propertySet->getGroups() as $group) {
+                foreach ($group->getOptions() as $option) {
+                    $mapped['attributeStr'][] = [
+                        'id'    => $group->getId(),
+                        'title' => $group->getName() . ' (property)',
+                        'value' => $option->getName(),
+                    ];
+                }
+            }
+        }
+
+        foreach ($detail->getConfiguration() as $group) {
+            foreach ($group->getOptions() as $option) {
+                $mapped['attributeStr'][] = [
+                    'id'    => $group->getId(),
+                    'title' => $group->getName() . ' (variant)',
+                    'value' => $option->getName(),
+                ];
+            }
+        }
+
+        return $mapped;
     }
 }
