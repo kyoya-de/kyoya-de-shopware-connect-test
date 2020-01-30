@@ -12,10 +12,12 @@
 namespace MakairaConnect;
 
 use Doctrine\ORM\Tools\SchemaTool;
+use MakairaConnect\DependencyInjection\ModifierCompilerPass;
 use MakairaConnect\Models\MakRevision as MakRevisionModel;
 use Shopware\Components\Plugin;
 use Shopware\Components\Plugin\Context\InstallContext;
 use Shopware\Components\Plugin\Context\UninstallContext;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
 
 if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     require_once __DIR__ . '/vendor/autoload.php';
@@ -23,6 +25,15 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 
 class MakairaConnect extends Plugin
 {
+    /**
+     * @param ContainerBuilder $container
+     */
+    public function build(ContainerBuilder $container)
+    {
+        parent::build($container);
+        $container->addCompilerPass(new ModifierCompilerPass());
+    }
+
     /**
      * automatic called (from shopware system)
      * Install plugin method

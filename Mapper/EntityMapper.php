@@ -5,20 +5,17 @@ namespace MakairaConnect\Mapper;
 use DateTime;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
-use Shopware\Bundle\MediaBundle\MediaServiceInterface;
-use Shopware\Bundle\StoreFrontBundle\Service\ContextServiceInterface;
-use Shopware\Bundle\StoreFrontBundle\Service\PriceCalculatorInterface;
+use MakairaConnect\Modifier\CategoryModifierInterface;
+use MakairaConnect\Modifier\ManufacturerModifierInterface;
+use MakairaConnect\Modifier\ProductModifierInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\Category as CategoryStruct;
 use Shopware\Bundle\StoreFrontBundle\Struct\Configurator\Set;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContext;
 use Shopware\Components\Routing\RouterInterface;
 use Shopware\Models\Category\Category;
-use Shopware\Models\Shop\Shop;
 use function array_map;
-use function array_merge;
 use function array_pop;
-use function array_values;
 use function count;
 use function str_replace;
 
@@ -40,18 +37,24 @@ class EntityMapper
     private $em;
 
     /**
-     * @var MediaServiceInterface
+     * @var ProductModifierInterface[]
      */
-    private $mediaService;
-
-    private $priceCalculator;
-
-    private $shopContext;
+    private $productModifiers = [];
 
     /**
-     * @var array
+     * @var ProductModifierInterface[]
      */
-    private $allShops;
+    private $variantModifiers = [];
+
+    /**
+     * @var CategoryModifierInterface[]
+     */
+    private $categoryModifiers = [];
+
+    /**
+     * @var ManufacturerModifierInterface[]
+     */
+    private $manufacturerModifiers = [];
 
     /**
      * @var string
@@ -61,40 +64,23 @@ class EntityMapper
     /**
      * EntityMapper constructor.
      *
-     * @param RouterInterface          $router
-     * @param EntityManagerInterface   $entityManager
-     * @param MediaServiceInterface    $mediaService
-     * @param PriceCalculatorInterface $priceCalculator
-     * @param ContextServiceInterface  $contextService
+     * @param RouterInterface        $router
+     * @param EntityManagerInterface $entityManager
      *
      * @throws Exception
      */
     public function __construct(
         RouterInterface $router,
-        EntityManagerInterface $entityManager,
-        MediaServiceInterface $mediaService,
-        PriceCalculatorInterface $priceCalculator,
-        ContextServiceInterface $contextService
+        EntityManagerInterface $entityManager
     ) {
-        $this->router          = $router;
-        $this->em              = $entityManager;
-        $this->mediaService    = $mediaService;
-        $this->priceCalculator = $priceCalculator;
-        $this->shopContext     = $contextService->getShopContext();
-
-        $repo           = $entityManager->getRepository(Shop::class);
-        $this->allShops = array_map(
-            static function (Shop $shop) {
-                return $shop->getId();
-            },
-            $repo->findAll()
-        );
-
-        $this->now = (new DateTime())->format('Y-m-d H:i:s');
+        $this->router = $router;
+        $this->em     = $entityManager;
+        $this->now    = (new DateTime())->format('Y-m-d H:i:s');
     }
 
     /**
      * @param CategoryStruct $category
+     * @param ShopContext    $context
      *
      * @return array
      */
@@ -129,24 +115,26 @@ class EntityMapper
             ]
         );
 
-        return [
-            'id'               => $category->getId(),
-            'active'           => true,
-            'hidden'           => false,
-            'sort'             => (int) $category->getPosition(),
-            'category_title'   => (string) $category->getName(),
-            'shortdesc'        => (string) $category->getCmsHeadline(),
-            'longdesc'         => (string) $category->getCmsText(),
-            'meta_keywords'    => (string) $category->getMetaKeywords(),
-            'meta_description' => (string) $category->getMetaDescription(),
-            'hierarchy'        => str_replace('|', '//', $path),
-            'depth'            => substr_count($path, '|') + 1,
-            'subcategories'    => self::$childrenCache[$path],
-            'shop'             => [$context->getShop()->getId()],
-            'timestamp'        => $this->now,
-            'url'              => $url,
-            'additionalData'   => '',
+        $mappedData = [
+            'id'             => $category->getId(),
+            'active'         => true,
+            'hidden'         => false,
+            'sort'           => (int) $category->getPosition(),
+            'category_title' => (string) $category->getName(),
+            'hierarchy'      => str_replace('|', '//', $path),
+            'depth'          => substr_count($path, '|') + 1,
+            'subcategories'  => self::$childrenCache[$path],
+            'shop'           => [$context->getShop()->getId()],
+            'timestamp'      => $this->now,
+            'url'            => $url,
+            'additionalData' => '',
         ];
+
+        foreach ($this->categoryModifiers as $categoryModifier) {
+            $categoryModifier->modifyCategory($mappedData, $category, $context);
+        }
+
+        return $mappedData;
     }
 
     /**
@@ -157,34 +145,37 @@ class EntityMapper
      */
     public function mapManufacturer(Product\Manufacturer $supplier, ShopContext $context): array
     {
-        return [
+        $mappedData = [
             'id'                 => $supplier->getId(),
             'manufacturer_title' => $supplier->getName(),
-            'shortdesc'          => $supplier->getDescription(),
-            'meta_keywords'      => $supplier->getMetaKeywords(),
-            'meta_description'   => $supplier->getMetaDescription(),
             'timestamp'          => $this->now,
             'url'                => $supplier->getLink(),
             'active'             => true,
             'shop'               => [$context->getShop()->getId()],
             'additionalData'     => [
-                'metaTitle'       => $supplier->getMetaTitle(),
+                'metaTitle' => $supplier->getMetaTitle(),
             ],
         ];
+
+        foreach ($this->manufacturerModifiers as $manufacturerModifier) {
+            $manufacturerModifier->modifyManufacturer($mappedData, $supplier, $context);
+        }
+
+        return $mappedData;
     }
 
     /**
-     * @param Product     $article
+     * @param Product     $product
      * @param ShopContext $context
      * @param Set         $configurator
      *
      * @return array
      */
-    public function mapProduct(Product $article, ShopContext $context, Set $configurator): array
+    public function mapProduct(Product $product, ShopContext $context, Set $configurator): array
     {
-        $mapped = $this->mapCommonProductData($article, $context, false);
+        $mapped = $this->mapCommonProductData($product, $context, false);
 
-        if (null !== ($properties = $article->getPropertySet())) {
+        if (null !== ($properties = $product->getPropertySet())) {
             foreach ($properties->getGroups() as $group) {
                 foreach ($group->getOptions() as $option) {
                     $mapped['attribute'][$group->getId()][] = $option->getName();
@@ -213,24 +204,24 @@ class EntityMapper
     }
 
     /**
-     * @param Product     $detail
+     * @param Product     $product
      * @param ShopContext $context
      * @param bool        $asVariant
      *
      * @return array
      */
-    protected function mapCommonProductData(Product $detail, ShopContext $context, $asVariant): array
+    protected function mapCommonProductData(Product $product, ShopContext $context, $asVariant): array
     {
         $router = $this->router;
         $url    = (string) $router->assemble(
             [
                 'sViewport' => 'detail',
-                'sArticle'  => $detail->getId(),
+                'sArticle'  => $product->getId(),
             ]
         );
 
         $imageUrl = '';
-        $images   = $detail->getMedia();
+        $images   = $product->getMedia();
         if (0 < count($images)) {
             foreach ($images as $image) {
                 if ('IMAGE' === $image->getType()) {
@@ -240,7 +231,7 @@ class EntityMapper
             }
         }
 
-        $categories    = $detail->getCategories();
+        $categories    = $product->getCategories();
         $allCategories = array_map(
             function (CategoryStruct $category) use ($context) {
                 return [
@@ -249,7 +240,6 @@ class EntityMapper
                     'path'   => $this->getPath(
                         $this->router->assemble(['sViewport' => 'cat', 'sCategory' => $category->getId()])
                     ),
-                    // TODO Replace hardcoded Shop-ID.
                     'shopid' => [$context->getShop()->getId()],
                 ];
             },
@@ -264,32 +254,28 @@ class EntityMapper
             ]
         );
 
-        $price = $detail->getVariantPrice()->getCalculatedPrice();
+        $price = $product->getVariantPrice()->getCalculatedPrice();
 
         $rawData = [
-            'id'                           => $detail->getVariantId(),
-            'parent'                       => $detail->getId(),
+            'id'                           => $product->getVariantId(),
+            'parent'                       => $product->getId(),
             'shop'                         => [$context->getShop()->getId()],
-            'ean'                          => $detail->getNumber(),
+            'ean'                          => $product->getNumber(),
             'activeto'                     => '',
             'activefrom'                   => '',
             'isVariant'                    => $asVariant,
-            'active'                       => $detail->isAvailable(),
+            'active'                       => $product->isAvailable(),
             'sort'                         => 0,
-            'stock'                        => $detail->getStock(),
-            'onstock'                      => $detail->getStock() > 0,
+            'stock'                        => $product->getStock(),
+            'onstock'                      => $product->getStock() > 0,
             'picture_url_main'             => $imageUrl,
-            'title'                        => $detail->getName(),
-            'shortdesc'                    => $detail->getShortDescription(),
-            'longdesc'                     => $detail->getLongDescription(),
+            'title'                        => $product->getName(),
+            'shortdesc'                    => $product->getShortDescription(),
+            'longdesc'                     => $product->getLongDescription(),
             'price'                        => $price,
             'soldamount'                   => 0,
             'searchable'                   => true,
             'searchkeys'                   => '',
-            'meta_keywords'                => $detail->getKeywords(),
-            'meta_description'             => $detail->getShortDescription(),
-            'manufacturerid'               => $detail->getManufacturer()->getId(),
-            'manufacturer_title'           => $detail->getManufacturer()->getName(),
             'url'                          => $url,
             'maincategory'                 => $mainCategory->getId(),
             'maincategoryurl'              => $mainCategoryUrl,
@@ -304,7 +290,7 @@ class EntityMapper
             'mak_boost_norm_profit_margin' => 0.0,
             'timestamp'                    => $this->now,
             'additionalData'               => [
-                'ean2' => $detail->getEan(),
+                'ean2' => $product->getEan(),
             ],
         ];
 
@@ -329,15 +315,15 @@ class EntityMapper
     }
 
     /**
-     * @param Product     $detail
+     * @param Product     $variant
      * @param ShopContext $context
      * @param Set[]       $propertySets
      *
      * @return array
      */
-    public function mapVariant(Product $detail, ShopContext $context, array $propertySets): array
+    public function mapVariant(Product $variant, ShopContext $context, array $propertySets): array
     {
-        $mapped = $this->mapCommonProductData($detail, $context, true);
+        $mapped = $this->mapCommonProductData($variant, $context, true);
 
         foreach ($propertySets as $propertySet) {
             foreach ($propertySet->getGroups() as $group) {
@@ -351,7 +337,7 @@ class EntityMapper
             }
         }
 
-        foreach ($detail->getConfiguration() as $group) {
+        foreach ($variant->getConfiguration() as $group) {
             foreach ($group->getOptions() as $option) {
                 $mapped['attributeStr'][] = [
                     'id'    => $group->getId(),
@@ -361,6 +347,58 @@ class EntityMapper
             }
         }
 
+        foreach ($this->variantModifiers as $variantModifier) {
+            $variantModifier->modifyProduct($mapped, $variant, $context);
+        }
+
         return $mapped;
+    }
+
+    /**
+     * @param ProductModifierInterface $productModifier
+     *
+     * @return $this
+     */
+    public function addProductModifier(ProductModifierInterface $productModifier)
+    {
+        $this->productModifiers[] = $productModifier;
+
+        return $this;
+    }
+
+    /**
+     * @param ProductModifierInterface $variantModifier
+     *
+     * @return $this
+     */
+    public function addVariantModifier(ProductModifierInterface $variantModifier)
+    {
+        $this->variantModifiers[] = $variantModifier;
+
+        return $this;
+    }
+
+    /**
+     * @param CategoryModifierInterface $categoryModifier
+     *
+     * @return $this
+     */
+    public function addCategoryModifier(CategoryModifierInterface $categoryModifier)
+    {
+        $this->categoryModifiers[] = $categoryModifier;
+
+        return $this;
+    }
+
+    /**
+     * @param ManufacturerModifierInterface $manufacturerModifier
+     *
+     * @return $this
+     */
+    public function addManufacturerModifier(ManufacturerModifierInterface $manufacturerModifier)
+    {
+        $this->manufacturerModifiers[] = $manufacturerModifier;
+
+        return $this;
     }
 }

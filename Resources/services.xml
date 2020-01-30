@@ -5,9 +5,33 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
-        <service id="makaira_connect.subscriber.event.shopware"
-                 class="MakairaConnect\Subscriber\ShopwareSubscriber">
+        <!-- Product modifier example -->
+        <service id="MakairaConnect\Modifier\Product\AddManufacturer">
+            <!-- This tag is important and decides about the modifier type. "priority" defaults to 0 -->
+            <tag name="makaira_connect.mapper.modifier.product" priority="1000"/>
+            <!-- This modifier can also be used for variants. -->
+            <tag name="makaira_connect.mapper.modifier.variant" priority="1000"/>
+        </service>
 
+        <!-- Category modifier example -->
+        <service id="MakairaConnect\Modifier\Category\AddDescriptions">
+            <tag name="makaira_connect.mapper.modifier.category" priority="1000"/>
+        </service>
+
+        <!-- Manufacturer modifier example -->
+        <service id="MakairaConnect\Modifier\Manufacturer\AddDescriptions">
+            <tag name="makaira_connect.mapper.modifier.manufacturer" priority="1000"/>
+        </service>
+
+        <!-- And all-in-one. -->
+        <service id="MakairaConnect\Modifier\Common\AddSeoMeta">
+            <tag name="makaira_connect.mapper.modifier.product" priority="999"/>
+            <tag name="makaira_connect.mapper.modifier.variant" priority="999"/>
+            <tag name="makaira_connect.mapper.modifier.category" priority="999"/>
+            <tag name="makaira_connect.mapper.modifier.manufacturer" priority="999"/>
+        </service>
+
+        <service id="makaira_connect.subscriber.event.shopware" class="MakairaConnect\Subscriber\ShopwareSubscriber">
             <tag name="shopware.event_subscriber" />
         </service>
 
@@ -20,9 +44,6 @@
         <service id="makaira_connect.mapper" class="MakairaConnect\Mapper\EntityMapper" public="true">
             <argument type="service" id="router"/>
             <argument type="service" id="models"/>
-            <argument type="service" id="shopware_media.media_service"/>
-            <argument type="service" id="shopware_storefront.price_calculator"/>
-            <argument type="service" id="shopware_storefront.context_service"/>
         </service>
 
         <service id="MakairaConnect\Command\TouchAllCommand">

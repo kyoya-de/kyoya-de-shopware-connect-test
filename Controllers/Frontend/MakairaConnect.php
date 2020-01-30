@@ -16,6 +16,7 @@ use Shopware\Bundle\StoreFrontBundle\Struct\Category;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product;
 use Shopware\Components\CSRFWhitelistAware;
 use Shopware\Components\Model\ModelManager;
+use Shopware\Models\Shop\Locale;
 use Shopware\Models\Shop\Repository;
 use Shopware\Models\Shop\Shop;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -87,7 +88,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         $shopRepo = $this->get('models')->getRepository(Shop::class);
         $qb = $shopRepo->createQueryBuilder('s');
         $qb->select('s.id')
-            ->leftJoin(\Shopware\Models\Shop\Locale::class, 'l', Join::WITH, 's.locale = l.id')
+            ->leftJoin(Locale::class, 'l', Join::WITH, 's.locale = l.id')
             ->where(
                 $qb->expr()->andX(
                     $qb->expr()->eq('l.locale', '?1'),
@@ -163,6 +164,32 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     {
         $this->container->get('plugin_manager')->Controller()->ViewRenderer()->setNoRender();
         $this->{$this->makairaRequest->request->get('action')}();
+    }
+
+    private function listLanguages()
+    {
+        /** @var Shop $shop */
+        $shop = $this->get('shop');
+        $shopId = $shop->getId();
+        if (null !== ($mainShop = $shop->getMain())) {
+            $shopId = $mainShop->getId();
+        }
+
+        /** @var Repository $shopRepo */
+        $shopRepo = $this->get('models')->getRepository(Locale::class);
+        $qb = $shopRepo->createQueryBuilder('l');
+        $qb->select('l.locale')
+            ->leftJoin(Shop::class, 's', Join::WITH, 'l.id = s.locale')
+            ->where(
+                $qb->expr()->orX(
+                    $qb->expr()->eq('s.id', '?1'),
+                    $qb->expr()->eq('s.mainId', '?1')
+                )
+            )
+            ->setParameter(1, $shopId);
+
+        $query = $qb->getQuery();
+        (new JsonResponse(array_map('reset', $query->getScalarResult())))->send();
     }
 
     /**
