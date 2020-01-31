@@ -5,7 +5,7 @@
     "installer-name": "MakairaConnect"
   },
   "require": {
-    "makaira/shared-libs": "^2019.7.0"
+    "makaira/shared-libs": "^2019.9@RC"
   },
   "autoload": {
     "psr-4": {
