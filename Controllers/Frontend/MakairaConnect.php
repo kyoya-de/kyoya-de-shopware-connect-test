@@ -1,6 +1,7 @@
 <?php
 
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\NoResultException;
 use Doctrine\ORM\Query\Expr\Join;
 use Makaira\Signing\Hash\Sha256;
 use MakairaConnect\Mapper;
@@ -15,12 +16,12 @@ use Shopware\Bundle\StoreFrontBundle\Service\Core\PropertyService;
 use Shopware\Bundle\StoreFrontBundle\Struct\Category;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product;
 use Shopware\Components\CSRFWhitelistAware;
-use Shopware\Components\Model\ModelManager;
 use Shopware\Models\Shop\Locale;
 use Shopware\Models\Shop\Repository;
 use Shopware\Models\Shop\Shop;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * This file is part of a marmalade GmbH project
@@ -101,8 +102,14 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
             ->setParameter(1, $this->makairaRequest->request->get('language', 'de_DE'))
             ->setParameter(2, $shopId);
 
+        // TODO Add try-catch for \Doctrine\ORM\NoResultException!
         $query = $qb->getQuery();
-        $contextShopId = (int) $query->getSingleScalarResult();
+        try {
+            $contextShopId = (int) $query->getSingleScalarResult();
+        } catch (NoResultException $noResult) {
+            (new JsonResponse(['error' => 'Unknown language.'], Response::HTTP_NOT_FOUND))->send();
+            exit(0);
+        }
 
         $this->productContext = $contextService->createProductContext($contextShopId);
     }
