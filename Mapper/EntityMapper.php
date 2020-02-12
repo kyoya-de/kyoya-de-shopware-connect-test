@@ -102,6 +102,7 @@ class EntityMapper
                 },
                 array_column($query->getScalarResult(), 'id')
             );
+            self::$childrenCache[$path][] = $category->getId();
         }
 
         $trimmedPath = trim($path, '|');
