@@ -5,6 +5,7 @@ use Doctrine\ORM\NoResultException;
 use Doctrine\ORM\Query\Expr\Join;
 use Makaira\Signing\Hash\Sha256;
 use MakairaConnect\Mapper;
+use MakairaConnect\Models\MakRevision;
 use MakairaConnect\Models\MakRevision as MakRevisionModel;
 use MakairaConnect\Repositories\MakRevisionRepository;
 use Shopware\Bundle\StoreFrontBundle\Service\Core\CategoryService;
@@ -37,7 +38,11 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     /**
      * List of possible actions to be called from makaira
      */
-    public const POSSIBLE_ACTIONS = ['getUpdates', 'listLanguages'];
+    public const POSSIBLE_ACTIONS = [
+        'getUpdates',
+        'listLanguages',
+        'getReplicationStatus',
+    ];
 
     /**
      * @var Request
@@ -76,10 +81,10 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         $this->verifySignature($this->config['makaira_connect_secret']);
 
         /** @var ContextService $contextService */
-        $contextService       = $this->get('shopware_storefront.context_service');
+        $contextService = $this->get('shopware_storefront.context_service');
 
         /** @var Shop $shop */
-        $shop = $this->get('shop');
+        $shop   = $this->get('shop');
         $shopId = $shop->getId();
         if (null !== ($mainShop = $shop->getMain())) {
             $shopId = $mainShop->getId();
@@ -87,7 +92,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
 
         /** @var Repository $shopRepo */
         $shopRepo = $this->get('models')->getRepository(Shop::class);
-        $qb = $shopRepo->createQueryBuilder('s');
+        $qb       = $shopRepo->createQueryBuilder('s');
         $qb->select('s.id')
             ->leftJoin(Locale::class, 'l', Join::WITH, 's.locale = l.id')
             ->where(
@@ -173,10 +178,21 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         $this->{$this->makairaRequest->request->get('action')}();
     }
 
+    public function getReplicationStatus()
+    {
+        $repo    = $this->em->getRepository(MakRevision::class);
+        $indices = $this->makairaRequest->get('indices');
+        foreach ($indices as $indexName => $index) {
+            $indices[$indexName]['openChanges'] = $repo->countSince((int) $index['lastRevision']);
+        }
+
+        (new JsonResponse($indices))->send();
+    }
+
     private function listLanguages()
     {
         /** @var Shop $shop */
-        $shop = $this->get('shop');
+        $shop   = $this->get('shop');
         $shopId = $shop->getId();
         if (null !== ($mainShop = $shop->getMain())) {
             $shopId = $mainShop->getId();
@@ -184,7 +200,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
 
         /** @var Repository $shopRepo */
         $shopRepo = $this->get('models')->getRepository(Locale::class);
-        $qb = $shopRepo->createQueryBuilder('l');
+        $qb       = $shopRepo->createQueryBuilder('l');
         $qb->select('l.locale')
             ->leftJoin(Shop::class, 's', Join::WITH, 'l.id = s.locale')
             ->where(
@@ -415,16 +431,16 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         /** @var Mapper\EntityMapper $mapper */
         $mapper = $this->get('makaira_connect.mapper');
 
-        $changes   = [
+        $changes = [
             array_map(
-            function (Category $category) use ($revisions, $mapper) {
-                return $this->buildChangesHead(
-                    $revisions[$category->getId()],
-                    $mapper->mapCategory($category, $this->productContext)
-                );
-            },
-            $categories
-        )
+                function (Category $category) use ($revisions, $mapper) {
+                    return $this->buildChangesHead(
+                        $revisions[$category->getId()],
+                        $mapper->mapCategory($category, $this->productContext)
+                    );
+                },
+                $categories
+            ),
         ];
 
         $loadedIds = $this->extractIds($categories);
@@ -451,7 +467,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
 
         /** @var ManufacturerService $categoryService */
         $categoryService = $this->get('shopware_storefront.manufacturer_service');
-        $suppliers = $categoryService->getList($ids, $this->productContext);
+        $suppliers       = $categoryService->getList($ids, $this->productContext);
 
         /** @var Mapper\EntityMapper $mapper */
         $mapper = $this->get('makaira_connect.mapper');

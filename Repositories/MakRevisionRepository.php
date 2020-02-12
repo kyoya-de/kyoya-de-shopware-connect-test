@@ -57,4 +57,16 @@ class MakRevisionRepository extends EntityRepository implements Enlight_Hook
 
         return $query->getResult();
     }
+
+    public function countSince($lastRev)
+    {
+        $qb = $this->createQueryBuilder('revs');
+        $query = $qb->select('COUNT(revs.sequence)')
+            ->where('revs.sequence > :lastRev')
+            ->setParameter('lastRev', $lastRev)
+            ->setMaxResults(1)
+            ->getQuery();
+
+        return (int) $query->getSingleScalarResult();
+    }
 }
