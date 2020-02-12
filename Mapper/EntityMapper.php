@@ -113,6 +113,7 @@ class EntityMapper
             [
                 'sViewport' => 'cat',
                 'sCategory' => $category->getId(),
+                'fullPath'  => '',
             ]
         );
 
@@ -146,11 +147,20 @@ class EntityMapper
      */
     public function mapManufacturer(Product\Manufacturer $supplier, ShopContext $context): array
     {
+        $url = $this->router->assemble(
+            [
+                'action'     => 'manufacturer',
+                'controller' => 'listing',
+                'sSupplier'  => $supplier->getId(),
+                'fullPath'   => '',
+            ]
+        );
+
         $mappedData = [
             'id'                 => $supplier->getId(),
             'manufacturer_title' => $supplier->getName(),
             'timestamp'          => $this->now,
-            'url'                => $supplier->getLink(),
+            'url'                => $url,
             'active'             => true,
             'shop'               => [$context->getShop()->getId()],
             'additionalData'     => [
@@ -218,6 +228,7 @@ class EntityMapper
             [
                 'sViewport' => 'detail',
                 'sArticle'  => $product->getId(),
+                'fullPath' => '',
             ]
         );
 
@@ -239,7 +250,11 @@ class EntityMapper
                     'catid'  => $category->getId(),
                     'title'  => $category->getName(),
                     'path'   => $this->getPath(
-                        $this->router->assemble(['sViewport' => 'cat', 'sCategory' => $category->getId()])
+                        $this->router->assemble([
+                            'sViewport' => 'cat',
+                            'sCategory' => $category->getId(),
+                            'fullPath'  => '',
+                        ])
                     ),
                     'shopid' => [$context->getShop()->getId()],
                 ];
@@ -252,6 +267,7 @@ class EntityMapper
             [
                 'sViewport' => 'cat',
                 'sCategory' => $mainCategory->getId(),
+                'fullPath'  => '',
             ]
         );
 
