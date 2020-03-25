@@ -6,7 +6,6 @@ use Doctrine\ORM\Query\Expr\Join;
 use Makaira\Signing\Hash\Sha256;
 use MakairaConnect\Mapper;
 use MakairaConnect\Models\MakRevision;
-use MakairaConnect\Models\MakRevision as MakRevisionModel;
 use MakairaConnect\Repositories\MakRevisionRepository;
 use Shopware\Bundle\StoreFrontBundle\Service\Core\CategoryService;
 use Shopware\Bundle\StoreFrontBundle\Service\Core\ConfiguratorService;
@@ -223,15 +222,15 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     private function getUpdates()
     {
         /** @var MakRevisionRepository $makRevisionRepo */
-        $makRevisionRepo = $this->container->get('models')->getRepository(MakRevisionModel::class);
+        $makRevisionRepo = $this->container->get('models')->getRepository(MakRevision::class);
 
-        /** @var MakRevisionModel[] $revisions */
+        /** @var MakRevision[] $revisions */
         $revisions = $makRevisionRepo->getRevisions(
             $this->makairaRequest->request->get('since'),
             $this->makairaRequest->request->get('count')
         );
 
-        /** @var MakRevisionModel[][] $updates */
+        /** @var MakRevision[][] $updates */
         $updates = [];
 
         foreach ($revisions as $revision) {
@@ -265,7 +264,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     }
 
     /**
-     * @param MakRevisionModel[] $revisions
+     * @param MakRevision[] $revisions
      *
      * @return array
      * @throws Exception
@@ -342,15 +341,15 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
      * type     => revision->type
      * data     => object data set
      *
-     * @param MakRevisionModel $revision
+     * @param MakRevision $revision
      * @param array            $data
      *
      * @return array
      */
-    private function buildChangesHead(MakRevisionModel $revision, array $data = []): array
+    private function buildChangesHead(MakRevision $revision, array $data = []): array
     {
         return [
-            'id'       => $revision->getId(),
+            'id'       => [] !== $data ? $data['id'] : $revision->getId(),
             'sequence' => $revision->getSequence(),
             'deleted'  => [] === $data,
             'type'     => $revision->getType(),
@@ -359,7 +358,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     }
 
     /**
-     * @param MakRevisionModel[] $revisions
+     * @param MakRevision[] $revisions
      *
      * @return array
      * @throws Exception
@@ -415,7 +414,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     }
 
     /**
-     * @param MakRevisionModel[] $revisions
+     * @param MakRevision[] $revisions
      *
      * @return array
      * @throws Exception
@@ -456,7 +455,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     }
 
     /**
-     * @param MakRevisionModel[] $revisions
+     * @param MakRevision[] $revisions
      *
      * @return array
      * @throws Exception
