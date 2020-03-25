@@ -5,10 +5,12 @@ namespace MakairaConnect\Client;
 use Makaira\Aggregation;
 use Makaira\Connect\Exception as ConnectException;
 use Makaira\Connect\Exceptions\UnexpectedValueException;
+use Makaira\Constraints;
 use Makaira\HttpClient;
 use Makaira\Query;
 use Makaira\Result;
 use Makaira\ResultItem;
+use function explode;
 use function htmlspecialchars_decode;
 use function json_decode;
 use function json_encode;
@@ -63,7 +65,10 @@ class Api implements ApiInterface
     {
         $query->searchPhrase = htmlspecialchars_decode($query->searchPhrase, ENT_QUOTES);
         $query->apiVersion   = $this->pluginVersion;
-        $request             = "{$this->baseUrl}/search/";
+
+        $this->sanatizeLanguage($query);
+
+        $request = "{$this->baseUrl}/search/";
 
         $headers = ["X-Makaira-Instance: {$this->config['makaira_instance']}"];
         if ($debug) {
@@ -89,6 +94,12 @@ class Api implements ApiInterface
         return array_map([$this, 'parseResult'], $apiResult);
     }
 
+    private function sanatizeLanguage(Query $query)
+    {
+        [$language,] = explode('_', $query->constraints[Constraints::LANGUAGE]);
+        $query->constraints[Constraints::LANGUAGE] = $language;
+    }
+
     /**
      * @param array $hits
      *
@@ -100,14 +111,14 @@ class Api implements ApiInterface
             static function ($hit) {
                 return new ResultItem($hit);
             },
-            $hits['items']
+            $hits['items'] ?? []
         );
 
         $hits['aggregations'] = array_map(
             static function ($hit) {
                 return new Aggregation($hit);
             },
-            $hits['aggregations']
+            $hits['aggregations'] ?? []
         );
 
         return new Result($hits);
