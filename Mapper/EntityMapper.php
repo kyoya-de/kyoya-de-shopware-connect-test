@@ -289,6 +289,21 @@ class EntityMapper
             $releaseDate = $releaseDate->format(DateTimeInterface::ATOM);
         }
 
+        $manufacturerTitle = '';
+        $makManufacturer   = [];
+        if (null !== ($manufacturer = $product->getManufacturer())) {
+            $manufacturerTitle = $manufacturer->getName();
+            $makManufacturer   = [
+                'id'    => $manufacturer->getId(),
+                'cover' => '',
+                'url'   => $manufacturer->getLink(),
+            ];
+
+            if (null !== ($manufacturerMedia = $manufacturer->getCoverMedia())) {
+                $makManufacturer['cover'] = $manufacturerMedia->getFile();
+            }
+        }
+
         $rawData = [
             'id'                           => $product->getVariantId(),
             'parent'                       => (string) ($asVariant ? $product->getId() : ''),
@@ -323,10 +338,12 @@ class EntityMapper
             'mak_boost_norm_profit_margin' => 0.0,
             'timestamp'                    => $this->now,
             'additionalData'               => [
-                'ean2'        => $product->getEan(),
-                'releaseDate' => (string) $releaseDate,
-                'popularity'  => $product->getSales(),
-                'catSort'     => $categorySort,
+                'ean2'                   => $product->getEan(),
+                'releaseDate'            => (string) $releaseDate,
+                'popularity'             => $product->getSales(),
+                'catSort'                => $categorySort,
+                'mak_manufacturer_title' => $manufacturerTitle,
+                'mak_manufacturer'       => $makManufacturer,
             ],
         ];
 
