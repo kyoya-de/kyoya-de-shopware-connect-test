@@ -3,6 +3,7 @@
 namespace MakairaConnect\Mapper;
 
 use DateTime;
+use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use MakairaConnect\Modifier\CategoryModifierInterface;
@@ -88,15 +89,17 @@ class EntityMapper
     {
         $path = implode('|', $category->getPath());
         if (!isset(self::$childrenCache[$path])) {
-            $repo  = $this->em->getRepository(Category::class);
-            $qb    = $repo->createQueryBuilder('c');
-            $query =
-                $qb->select('c.id')->where($qb->expr()->like('c.path', ':path'))->setParameter(
-                        'path',
-                        str_replace('||', '|', "%|{$category->getId()}|{$path}|")
-                    )->getQuery();
+            $repo = $this->em->getRepository(Category::class);
+            $qb   = $repo->createQueryBuilder('c');
 
-            self::$childrenCache[$path] = array_map(
+            // @formatter:off
+            $query = $qb->select('c.id')
+                ->where($qb->expr()->like('c.path', ':path'))
+                ->setParameter('path', str_replace('||', '|', "%|{$category->getId()}|{$path}|"))
+                ->getQuery();
+            // @formatter:on
+
+            self::$childrenCache[$path]   = array_map(
                 static function ($id) {
                     return (int) $id;
                 },
@@ -228,7 +231,7 @@ class EntityMapper
             [
                 'sViewport' => 'detail',
                 'sArticle'  => $product->getId(),
-                'fullPath' => '',
+                'fullPath'  => '',
             ]
         );
 
@@ -244,17 +247,22 @@ class EntityMapper
         }
 
         $categories    = $product->getCategories();
+        $categorySort  = [];
         $allCategories = array_map(
-            function (CategoryStruct $category) use ($context) {
+            function (CategoryStruct $category) use ($context, &$categorySort) {
+                $categorySort["cat_{$category->getId()}"] = $category->getPosition();
+
                 return [
                     'catid'  => $category->getId(),
                     'title'  => $category->getName(),
                     'path'   => $this->getPath(
-                        $this->router->assemble([
-                            'sViewport' => 'cat',
-                            'sCategory' => $category->getId(),
-                            'fullPath'  => '',
-                        ])
+                        $this->router->assemble(
+                            [
+                                'sViewport' => 'cat',
+                                'sCategory' => $category->getId(),
+                                'fullPath'  => '',
+                            ]
+                        )
                     ),
                     'shopid' => [$context->getShop()->getId()],
                 ];
@@ -271,11 +279,19 @@ class EntityMapper
             ]
         );
 
-        $price = $product->getVariantPrice()->getCalculatedPrice();
+        if ($asVariant) {
+            $price = $product->getVariantPrice()->getCalculatedPrice();
+        } else {
+            $price = ($product->getCheapestPrice() ?? $product->getVariantPrice())->getCalculatedPrice();
+        }
+
+        if (null !== ($releaseDate = $product->getReleaseDate())) {
+            $releaseDate = $releaseDate->format(DateTimeInterface::ATOM);
+        }
 
         $rawData = [
             'id'                           => $product->getVariantId(),
-            'parent'                       => $product->getId(),
+            'parent'                       => (string) ($asVariant ? $product->getId() : ''),
             'shop'                         => [$context->getShop()->getId()],
             'ean'                          => $product->getNumber(),
             'activeto'                     => '',
@@ -307,7 +323,10 @@ class EntityMapper
             'mak_boost_norm_profit_margin' => 0.0,
             'timestamp'                    => $this->now,
             'additionalData'               => [
-                'ean2' => $product->getEan(),
+                'ean2'        => $product->getEan(),
+                'releaseDate' => (string) $releaseDate,
+                'popularity'  => $product->getSales(),
+                'catSort'     => $categorySort,
             ],
         ];
 
