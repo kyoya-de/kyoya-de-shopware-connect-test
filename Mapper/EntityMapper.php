@@ -192,7 +192,7 @@ class EntityMapper
         if (null !== ($properties = $product->getPropertySet())) {
             foreach ($properties->getGroups() as $group) {
                 foreach ($group->getOptions() as $option) {
-                    $mapped['attribute'][$group->getId()][] = $option->getName();
+                    $mapped['attributes'][$group->getId()][] = $option->getName();
                     $mapped['attributeStr'][]               = [
                         'id'    => $group->getId(),
                         'title' => $group->getName() . ' (property)',
@@ -205,7 +205,7 @@ class EntityMapper
 
         foreach ($configurator->getGroups() as $group) {
             foreach ($group->getOptions() as $option) {
-                $mapped['attribute'][$group->getId()][] = $option->getName();
+                $mapped['attributes'][$group->getId()][] = $option->getName();
                 $mapped['attributeStr'][]               = [
                     'id'    => $group->getId(),
                     'title' => $group->getName() . ' (variant)',
@@ -305,7 +305,7 @@ class EntityMapper
         }
 
         $rawData = [
-            'id'                           => $product->getVariantId(),
+            'id'                           => $asVariant ? $product->getVariantId() : $product->getId(),
             'parent'                       => (string) ($asVariant ? $product->getId() : ''),
             'shop'                         => [$context->getShop()->getId()],
             'ean'                          => $product->getNumber(),
@@ -348,7 +348,7 @@ class EntityMapper
         ];
 
         if (!$asVariant) {
-            $rawData['attribute'] = [];
+            $rawData['attributes'] = [];
         }
 
         return $rawData;
