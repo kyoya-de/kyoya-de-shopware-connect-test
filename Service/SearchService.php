@@ -82,7 +82,8 @@ class SearchService implements ProductSearchInterface
 
         if ($criteria->hasBaseCondition('manufacturer')) {
             $ManufacturerCondition                         = $criteria->getBaseCondition('manufacturer');
-            $query->constraints[Constraints::MANUFACTURER] = $ManufacturerCondition->getManufacturerIds();
+            $manufacturerIds                               = $ManufacturerCondition->getManufacturerIds();
+            $query->constraints[Constraints::MANUFACTURER] = reset($manufacturerIds);
         }
 
         $result = $this->api->search($query, 'true');
@@ -112,7 +113,7 @@ class SearchService implements ProductSearchInterface
         $hasCategory     = $criteria->hasBaseCondition('category');
 
         $isSearch       = $hasSearch;
-        $isManufacturer = $hasManufacturer && !$hasCategory && !$hasSearch;
+        $isManufacturer = $hasManufacturer && !$hasSearch;
         $isCategory     = $hasCategory && !$hasSearch && !$hasManufacturer;
 
         return ($isSearch && $this->config['makaira_search']) ||

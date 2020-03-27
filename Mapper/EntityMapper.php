@@ -193,7 +193,8 @@ class EntityMapper
             foreach ($properties->getGroups() as $group) {
                 foreach ($group->getOptions() as $option) {
                     $mapped['attributes'][$group->getId()][] = $option->getName();
-                    $mapped['attributeStr'][]               = [
+
+                    $mapped['attributeStr'][] = [
                         'id'    => $group->getId(),
                         'title' => $group->getName() . ' (property)',
                         'value' => $option->getName(),
@@ -206,7 +207,8 @@ class EntityMapper
         foreach ($configurator->getGroups() as $group) {
             foreach ($group->getOptions() as $option) {
                 $mapped['attributes'][$group->getId()][] = $option->getName();
-                $mapped['attributeStr'][]               = [
+
+                $mapped['attributeStr'][] = [
                     'id'    => $group->getId(),
                     'title' => $group->getName() . ' (variant)',
                     'value' => $option->getName(),
@@ -338,12 +340,13 @@ class EntityMapper
             'mak_boost_norm_profit_margin' => 0.0,
             'timestamp'                    => $this->now,
             'additionalData'               => [
-                'ean2'                   => $product->getEan(),
-                'releaseDate'            => (string) $releaseDate,
-                'popularity'             => $product->getSales(),
-                'catSort'                => $categorySort,
-                'mak_manufacturer_title' => $manufacturerTitle,
-                'mak_manufacturer'       => $makManufacturer,
+                'ean2'               => $product->getEan(),
+                'releaseDate'        => (string) $releaseDate,
+                'popularity'         => $product->getSales(),
+                'catSort'            => $categorySort,
+                'manufacturerid'     => (string) ($makManufacturer['id'] ?? ''),
+                'manufacturer_title' => $manufacturerTitle,
+                'sw_manufacturer'    => $makManufacturer,
             ],
         ];
 
