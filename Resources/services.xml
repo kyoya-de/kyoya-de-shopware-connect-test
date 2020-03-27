@@ -68,6 +68,12 @@
             <tag name="console.command" />
         </service>
 
+        <service id="makaira_connect.command.filter_update" class="MakairaConnect\Command\FilterUpdateCommand">
+            <argument type="service" id="makaira.api"/>
+            <argument type="service" id="models"/>
+            <tag name="console.command" />
+        </service>
+
         <service
             id="makaira_search.product_search"
             class="MakairaConnect\Service\SearchService"

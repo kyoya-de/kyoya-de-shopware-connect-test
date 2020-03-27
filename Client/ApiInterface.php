@@ -15,4 +15,9 @@ interface ApiInterface
      * @return array
      */
     public function search(Query $query, string $debug = ''): array;
+
+    /**
+     * @return array
+     */
+    public function fetchFilter(): array;
 }

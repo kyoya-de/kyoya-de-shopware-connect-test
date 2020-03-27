@@ -11,6 +11,7 @@ use Makaira\Query;
 use Makaira\Result;
 use Makaira\ResultItem;
 use function explode;
+use function get_class;
 use function htmlspecialchars_decode;
 use function json_decode;
 use function json_encode;
@@ -29,14 +30,14 @@ class Api implements ApiInterface
     private $baseUrl;
 
     /**
-     * @var array
-     */
-    private $config;
-
-    /**
      * @var string
      */
     private $pluginVersion;
+
+    /**
+     * @var array
+     */
+    private $defaultHeaders;
 
     /**
      * Api constructor.
@@ -47,10 +48,22 @@ class Api implements ApiInterface
      */
     public function __construct(HttpClient $httpClient, array $config, string $pluginVersion)
     {
-        $this->baseUrl       = rtrim($config['makaira_application_url'], '/');
-        $this->httpClient    = $httpClient;
-        $this->config        = $config;
-        $this->pluginVersion = $pluginVersion;
+        $this->baseUrl        = rtrim($config['makaira_application_url'], '/');
+        $this->httpClient     = $httpClient;
+        $this->pluginVersion  = $pluginVersion;
+        $this->defaultHeaders = ["X-Makaira-Instance: {$config['makaira_instance']}"];
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function fetchFilter(): array
+    {
+        $request = "{$this->baseUrl}/aggregation?_end=1000&_order=ASC&_sort=position&_start=0";
+
+        $response = $this->httpClient->request('GET', $request, '{}', $this->defaultHeaders);
+
+        return (array) json_decode($response->body, true);
     }
 
     /**
@@ -70,7 +83,7 @@ class Api implements ApiInterface
 
         $request = "{$this->baseUrl}/search/";
 
-        $headers = ["X-Makaira-Instance: {$this->config['makaira_instance']}"];
+        $headers = $this->defaultHeaders;
         if ($debug) {
             $headers[] = "X-Makaira-Trace: {$debug}";
         }

@@ -4,10 +4,12 @@ namespace MakairaConnect\Service;
 
 use Makaira\Constraints;
 use Makaira\Query;
+use Makaira\Result;
 use Makaira\ResultItem;
 use MakairaConnect\Client\ApiInterface;
 use Shopware\Bundle\SearchBundle\Condition\CategoryCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
+use Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult;
 use Shopware\Bundle\SearchBundle\ProductSearchInterface;
 use Shopware\Bundle\SearchBundle\ProductSearchResult;
 use Shopware\Bundle\SearchBundle\Sorting;
@@ -93,7 +95,9 @@ class SearchService implements ProductSearchInterface
         );
         $products = $this->productService->getList($numbers, $context);
 
-        return new ProductSearchResult($products, $result['product']->total, [], $criteria, $context);
+        $facets = $this->parseFacets($result['product']);
+
+        return new ProductSearchResult($products, $result['product']->total, $facets, $criteria, $context);
     }
 
     /**
@@ -114,6 +118,28 @@ class SearchService implements ProductSearchInterface
         return ($isSearch && $this->config['makaira_search']) ||
             ($isManufacturer && $this->config['makaira_manufacturer']) ||
             ($isCategory && $this->config['makaira_category']);
+    }
+
+    private function parseFacets(Result $result)
+    {
+        $facets = [];
+        foreach ($result->aggregations as $aggregation) {
+            if (0 === strpos($aggregation->type, 'range_slider_price')) {
+                $facets[$aggregation->key] = new RangeFacetResult(
+                    $aggregation->key,
+                    true,
+                    $aggregation->title,
+                    $aggregation->min,
+                    $aggregation->max,
+                    null !== $aggregation->selectedValues ? $aggregation->selectedValues[0] : $aggregation->min,
+                    null !== $aggregation->selectedValues ? $aggregation->selectedValues[1] : $aggregation->max,
+                    "makairaFilter[{$aggregation->key}][min]",
+                    "makairaFilter[{$aggregation->key}][max]"
+                );
+            }
+        }
+
+        return $facets;
     }
 
     /**
