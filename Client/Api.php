@@ -10,8 +10,8 @@ use Makaira\HttpClient;
 use Makaira\Query;
 use Makaira\Result;
 use Makaira\ResultItem;
+use function compact;
 use function explode;
-use function get_class;
 use function htmlspecialchars_decode;
 use function json_decode;
 use function json_encode;
@@ -57,11 +57,17 @@ class Api implements ApiInterface
     /**
      * @inheritDoc
      */
-    public function fetchFilter(): array
-    {
-        $request = "{$this->baseUrl}/aggregation?_end=1000&_order=ASC&_sort=position&_start=0";
+    public function fetchFilter(
+        string $sort = 'id',
+        string $direction = 'ASC',
+        int $offset = 0,
+        int $count = 10000
+    ): array {
+        $request = "{$this->baseUrl}/search/filter";
 
-        $response = $this->httpClient->request('GET', $request, '{}', $this->defaultHeaders);
+        $body = json_encode(compact('sort', 'direction', 'offset', 'count'));
+
+        $response = $this->httpClient->request('POST', $request, $body, $this->defaultHeaders);
 
         return (array) json_decode($response->body, true);
     }

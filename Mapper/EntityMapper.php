@@ -196,7 +196,7 @@ class EntityMapper
 
                     $mapped['attributeStr'][] = [
                         'id'    => $group->getId(),
-                        'title' => $group->getName() . ' (property)',
+                        'title' => $group->getName(),
                         'value' => $option->getName(),
 
                     ];
@@ -210,10 +210,18 @@ class EntityMapper
 
                 $mapped['attributeStr'][] = [
                     'id'    => $group->getId(),
-                    'title' => $group->getName() . ' (variant)',
+                    'title' => $group->getName(),
                     'value' => $option->getName(),
                 ];
             }
+        }
+
+        if (0 === count($mapped['attributeStr'])) {
+            unset($mapped['attributeStr']);
+        }
+
+        foreach ($this->productModifiers as $productModifier) {
+            $productModifier->modifyProduct($mapped, $product, $context);
         }
 
         return $mapped;
@@ -351,7 +359,8 @@ class EntityMapper
         ];
 
         if (!$asVariant) {
-            $rawData['attributes'] = [];
+            $rawData['attributes']   = [];
+            $rawData['attributeStr'] = [];
         }
 
         return $rawData;
@@ -386,7 +395,7 @@ class EntityMapper
                 foreach ($group->getOptions() as $option) {
                     $mapped['attributeStr'][] = [
                         'id'    => $group->getId(),
-                        'title' => $group->getName() . ' (property)',
+                        'title' => $group->getName(),
                         'value' => $option->getName(),
                     ];
                 }
@@ -397,10 +406,14 @@ class EntityMapper
             foreach ($group->getOptions() as $option) {
                 $mapped['attributeStr'][] = [
                     'id'    => $group->getId(),
-                    'title' => $group->getName() . ' (variant)',
+                    'title' => $group->getName(),
                     'value' => $option->getName(),
                 ];
             }
+        }
+
+        if (0 === count($mapped['attributeStr'])) {
+            unset($mapped['attributeStr']);
         }
 
         foreach ($this->variantModifiers as $variantModifier) {
