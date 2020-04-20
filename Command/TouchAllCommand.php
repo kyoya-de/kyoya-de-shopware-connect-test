@@ -45,55 +45,31 @@ class TouchAllCommand extends ShopwareCommand
         $categoryRepo     = $doctrine->getRepository(Category::class);
         $supplierRepo = $doctrine->getRepository(Supplier::class);
 
-        $progress = new ProgressBar($output);
-        $progress->setRedrawFrequency(10);
-        $progress->setBarWidth(120);
-
         /** @var Article[] $products */
         $products = $productRepo->findAll();
         $productCount = count($products);
         $output->writeln("Adding {$productCount} products.");
-        $progress->start($productCount);
-        foreach ($products as $product) {
-            $progress->advance();
-            $revisionRepo->addRevision('product', $product->getMainDetail()->getNumber());
-        }
-        $progress->finish();
+        $revisionRepo->addRevisions('product', $products);
 
         /** @var Detail[] $variants */
         $variants = $variantRepo->findAll();
         $variantCount = count($variants);
-        $output->writeln("\n\nAdding {$productCount} variants.");
-        $progress->start($variantCount);
-        foreach ($variants as $variant) {
-            $progress->advance();
-            $revisionRepo->addRevision('variant', $variant->getNumber());
-        }
-        $progress->finish();
+        $output->writeln("Adding {$variantCount} variants.");
+        $revisionRepo->addRevisions('variant', $variants);
 
         /** @var Category[] $categories */
         $categories = $categoryRepo->findAll();
         $categoryCount = count($categories);
-        $output->writeln("\n\nAdding {$categoryCount} categories.");
-        $progress->start($categoryCount);
-        foreach ($categories as $category) {
-            $progress->advance();
-            $revisionRepo->addRevision('category', $category->getId());
-        }
-        $progress->finish();
+        $output->writeln("Adding {$categoryCount} categories.");
+        $revisionRepo->addRevisions('category', $categories);
 
         /** @var Supplier[] $suppliers */
         $suppliers = $supplierRepo->findAll();
         $supplierCount = count($suppliers);
-        $output->writeln("\n\nAdding {$supplierCount} suppliers.");
-        $progress->start($supplierCount);
-        foreach ($suppliers as $supplier) {
-            $progress->advance();
-            $revisionRepo->addRevision('manufacturer', $supplier->getId());
-        }
-        $progress->finish();
+        $output->writeln("Adding {$supplierCount} suppliers.");
+        $revisionRepo->addRevisions('manufacturer', $suppliers);
 
-        $output->writeln("\n\nDone");
+        $output->writeln('Done');
     }
 
 }

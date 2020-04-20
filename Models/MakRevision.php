@@ -125,4 +125,15 @@ class MakRevision extends ModelEntity
         return $this;
     }
 
+    /**
+     * @param int $sequence
+     *
+     * @return MakRevision
+     */
+    public function setSequence(?int $sequence): MakRevision
+    {
+        $this->sequence = $sequence;
+
+        return $this;
+    }
 }
