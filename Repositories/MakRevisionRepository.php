@@ -10,6 +10,7 @@ use MakairaConnect\Models\MakRevision as MakRevisionModel;
 use Shopware\Components\Model\ModelEntity;
 use Shopware\Models\Article\Article;
 use Shopware\Models\Article\Detail;
+use function array_map;
 
 /**
  * MakRevisionRepository
@@ -44,7 +45,7 @@ class MakRevisionRepository extends EntityRepository implements Enlight_Hook
     }
 
     /**
-     * @param string $type
+     * @param string        $type
      * @param ModelEntity[] $objects
      *
      * @throws ORMException
@@ -52,27 +53,29 @@ class MakRevisionRepository extends EntityRepository implements Enlight_Hook
      */
     public function addRevisions(string $type, $objects): void
     {
-        $objectIds = [];
-        foreach ($objects as $object) {
-            $objectIds = array_map(
-                static function ($object) use ($type) {
-                    if ('product' === $type && $object instanceof Article) {
-                        return $object->getMainDetail()->getNumber();
-                    }
+        $objectIds = array_map(
+            static function ($object) use ($type) {
+                if ('product' === $type && $object instanceof Article) {
+                    return $object->getMainDetail()->getNumber();
+                }
 
-                    if ('variant' === $type && $object instanceof Detail) {
-                        return $object->getNumber();
-                    }
+                if ('variant' === $type && $object instanceof Detail) {
+                    return $object->getNumber();
+                }
 
-                    return $object->getId();
-                },
-                $objects
-            );
-        }
+                return $object->getId();
+            },
+            $objects
+        );
 
         $qb = $this->createQueryBuilder('mr');
         /** @var MakRevisionModel[] $revisions */
-        $revisions = $qb->select()->where($qb->expr()->in('mr.id', $objectIds))->getQuery()->getResult();
+        $revisions = $qb->select()->where(
+            $qb->expr()->andX(
+                $qb->expr()->in('mr.id', $objectIds),
+                $qb->expr()->eq('mr.type', ':type')
+            )
+        )->setParameter('type', $type)->getQuery()->getResult();
 
         $i = 0;
 
