@@ -71,6 +71,7 @@
         <service id="makaira_connect.command.filter_update" class="MakairaConnect\Command\FilterUpdateCommand">
             <argument type="service" id="makaira.api"/>
             <argument type="service" id="models"/>
+<!--            <argument>%makaira.filter_mapping%</argument>-->
             <tag name="console.command" />
         </service>
 
@@ -83,6 +84,11 @@
             <argument type="service" id="makaira_search.product_search.inner"/>
             <argument type="service" id="makaira.api" />
             <argument type="service" id="shopware_storefront.list_product_service"/>
+        </service>
+
+        <service id="MakairaConnect\Search\CriteriaRequestHandler">
+            <argument type="service" id="shopware_storefront.custom_facet_gateway"/>
+            <tag name="criteria_request_handler" />
         </service>
     </services>
 </container>

@@ -274,7 +274,7 @@ class EntityMapper
                             ]
                         )
                     ),
-                    'shopid' => [$context->getShop()->getId()],
+                    'shopid' => $context->getShop()->getId(),
                 ];
             },
             $categories
