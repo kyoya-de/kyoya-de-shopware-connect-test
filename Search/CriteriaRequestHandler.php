@@ -5,6 +5,7 @@ namespace MakairaConnect\Search;
 use Assert\AssertionFailedException;
 use Enlight_Controller_Request_RequestHttp as Request;
 use MakairaConnect\Search\Condition\MakairaCondition;
+use MakairaConnect\Search\Condition\MakairaDebugCondition;
 use MakairaConnect\Search\Facet\MakairaFacet;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\CriteriaRequestHandlerInterface;
@@ -48,6 +49,10 @@ class CriteriaRequestHandler implements CriteriaRequestHandlerInterface
             $criteria->addFacet($facet);
 
             $this->handleMakairaFacet($request, $criteria, $facet);
+        }
+
+        if ($request->has('mak_debug') || $request->headers->has('x-makaira-debug')) {
+            $criteria->addCondition(new MakairaDebugCondition());
         }
     }
 

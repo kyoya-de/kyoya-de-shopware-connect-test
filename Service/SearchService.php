@@ -28,12 +28,24 @@ use function strpos;
 
 class SearchService implements ProductSearchInterface
 {
+    /**
+     * @var array
+     */
     private $config;
 
+    /**
+     * @var ApiInterface
+     */
     private $api;
 
+    /**
+     * @var ProductSearchInterface
+     */
     private $innerService;
 
+    /**
+     * @var ListProductServiceInterface
+     */
     private $productService;
 
     /**
@@ -123,7 +135,7 @@ class SearchService implements ProductSearchInterface
             }
         }
 
-        $result = $this->api->search($query, 'true');
+        $result = $this->api->search($query, $criteria->hasCondition('makaira_debug') ? 'true' : '');
 
         $numbers  = array_map(
             static function (ResultItem $item) {
@@ -158,6 +170,12 @@ class SearchService implements ProductSearchInterface
             ($isCategory && $this->config['makaira_category']);
     }
 
+    /**
+     * @param Criteria $criteria
+     * @param Result   $result
+     *
+     * @return array
+     */
     private function parseFacets(Criteria $criteria, Result $result)
     {
         $facets = [];
