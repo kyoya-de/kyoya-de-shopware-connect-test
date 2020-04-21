@@ -263,7 +263,7 @@ class EntityMapper
                 $categorySort["cat_{$category->getId()}"] = $category->getPosition();
 
                 return [
-                    'catid'  => $category->getId(),
+                    'catid'  => (string) $category->getId(),
                     'title'  => $category->getName(),
                     'path'   => $this->getPath(
                         $this->router->assemble(

@@ -115,7 +115,12 @@ class SearchService implements ProductSearchInterface
 
         if ($criteria->hasBaseCondition('category')) {
             $categoryCondition                         = $criteria->getBaseCondition('category');
-            $query->constraints[Constraints::CATEGORY] = $categoryCondition->getCategoryIds();
+            $query->constraints[Constraints::CATEGORY] = array_map(
+                static function ($categoryId) {
+                    return (string) $categoryId;
+                },
+                $categoryCondition->getCategoryIds()
+            );
         }
 
         if ($criteria->hasBaseCondition('manufacturer')) {
