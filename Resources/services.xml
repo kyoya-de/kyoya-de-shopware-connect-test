@@ -84,6 +84,21 @@
             <argument type="service" id="makaira_search.product_search.inner"/>
             <argument type="service" id="makaira.api" />
             <argument type="service" id="shopware_storefront.list_product_service"/>
+            <argument type="tagged" tag="makaira_connect.result_facet_service"/>
+            <argument type="tagged" tag="makaira_connect.condition_parser"/>
+            <argument type="tagged" tag="makaira_connect.sorting_parser"/>
+        </service>
+
+        <service id="MakairaConnect\Search\Result\FacetResultService">
+            <tag name="makaira_connect.result_facet_service" />
+        </service>
+
+        <service id="MakairaConnect\Search\Condition\ConditionParser">
+            <tag name="makaira_connect.condition_parser" />
+        </service>
+
+        <service id="MakairaConnect\Search\Sorting\SortingParser">
+            <tag name="makaira_connect.sorting_parser" />
         </service>
 
         <service id="MakairaConnect\Search\CriteriaRequestHandler">
