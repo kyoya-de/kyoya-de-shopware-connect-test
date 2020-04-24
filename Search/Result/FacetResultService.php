@@ -5,15 +5,20 @@ namespace MakairaConnect\Search\Result;
 use Makaira\Aggregation;
 use Makaira\Result;
 use MakairaConnect\Search\Condition\MakairaCondition;
-use Shopware\Bundle\SearchBundle\ConditionInterface;
 use Shopware\Bundle\SearchBundle\Criteria;
+use Shopware\Bundle\SearchBundle\Facet\CategoryFacet;
 use Shopware\Bundle\SearchBundle\FacetResult\BooleanFacetResult;
+use Shopware\Bundle\SearchBundle\FacetResult\CategoryTreeFacetResultBuilder;
 use Shopware\Bundle\SearchBundle\FacetResult\RadioFacetResult;
 use Shopware\Bundle\SearchBundle\FacetResult\RangeFacetResult;
+use Shopware\Bundle\SearchBundle\FacetResult\TreeFacetResult;
 use Shopware\Bundle\SearchBundle\FacetResult\ValueListFacetResult;
 use Shopware\Bundle\SearchBundle\FacetResult\ValueListItem;
 use Shopware\Bundle\SearchBundle\FacetResultInterface;
+use Shopware\Bundle\StoreFrontBundle\Service\CategoryServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
+use function array_flip;
+use function array_values;
 use function in_array;
 use function is_array;
 use function reset;
@@ -21,6 +26,35 @@ use function strpos;
 
 class FacetResultService implements FacetResultServiceInterface
 {
+    /**
+     * @const string[]
+     */
+    private const TYPES_CATEGORY_TREE = [
+        'categorytree',
+        'categorysubtree',
+        'fullcategorytree',
+        'fullcategorysubtree',
+    ];
+
+    /**
+     * @var CategoryServiceInterface
+     */
+    private $categoryService;
+
+    /**
+     * @var CategoryTreeFacetResultBuilder
+     */
+    private $categoryTreeFacetResultBuilder;
+
+    public function __construct(
+        CategoryServiceInterface $categoryService,
+        CategoryTreeFacetResultBuilder $categoryTreeFacetResultBuilder
+    ) {
+        $this->categoryService = $categoryService;
+
+        $this->categoryTreeFacetResultBuilder = $categoryTreeFacetResultBuilder;
+    }
+
     /**
      * @param FacetResultInterface[]  $facets
      * @param Criteria                $criteria
@@ -42,7 +76,7 @@ class FacetResultService implements FacetResultServiceInterface
             $facet = null;
 
             if (0 === strpos($aggregation->type, 'range_slider')) {
-                $facet = $this->buildRangeFacet($aggregation, $formFieldName, $condition, $conditionValue);
+                $facet = $this->buildRangeFacet($aggregation, $formFieldName, $isActive, $conditionValue);
             }
 
             if ('list' === $aggregation->type || 0 === strpos($aggregation->type, 'list_')) {
@@ -53,6 +87,10 @@ class FacetResultService implements FacetResultServiceInterface
                 $facet = $this->buildScriptFacet($aggregation, $formFieldName);
             }
 
+            if (in_array($aggregation->type, self::TYPES_CATEGORY_TREE, true)) {
+                $facet = $this->buildCategoryTreeFacet($aggregation, $criteria, $context);
+            }
+
             if (null !== $facet) {
                 $facets[$aggregation->key] = $facet;
             }
@@ -60,22 +98,22 @@ class FacetResultService implements FacetResultServiceInterface
     }
 
     /**
-     * @param Aggregation        $aggregation
-     * @param string             $formFieldName
-     * @param ConditionInterface $condition
-     * @param int|null           $conditionValue
+     * @param Aggregation $aggregation
+     * @param string      $formFieldName
+     * @param bool        $active
+     * @param int|null    $conditionValue
      *
      * @return RangeFacetResult
      */
     protected function buildRangeFacet(
-        $aggregation,
+        Aggregation $aggregation,
         string $formFieldName,
-        $condition,
-        $conditionValue
+        bool $active,
+        ?int $conditionValue
     ): RangeFacetResult {
         return new RangeFacetResult(
             $aggregation->key,
-            null !== $condition,
+            $active,
             $aggregation->title,
             $aggregation->min,
             $aggregation->max,
@@ -109,11 +147,9 @@ class FacetResultService implements FacetResultServiceInterface
             );
         }
 
-        $facet = new $facetResultClass(
+        return new $facetResultClass(
             $aggregation->key, $isActive, $aggregation->title, $values, $formFieldName
         );
-
-        return $facet;
     }
 
     /**
@@ -126,10 +162,48 @@ class FacetResultService implements FacetResultServiceInterface
     {
         $selectedValue = (int) (is_array($aggregation->selectedValues) ? reset($aggregation->selectedValues) : 0);
 
-        $facet = new BooleanFacetResult(
+        return new BooleanFacetResult(
             $aggregation->key, $formFieldName, 1 === $selectedValue, $aggregation->title
         );
+    }
 
-        return $facet;
+    /**
+     * @param Aggregation             $aggregation
+     * @param Criteria                $criteria
+     * @param ProductContextInterface $context
+     *
+     * @return TreeFacetResult|null
+     */
+    protected function buildCategoryTreeFacet(
+        Aggregation $aggregation,
+        Criteria $criteria,
+        ProductContextInterface $context
+    ): ?TreeFacetResult {
+        $catIds = [];
+        $this->flattenCategoryIds($aggregation->values, $catIds);
+        $categories        = $this->categoryService->getList($catIds, $context);
+        $currentCategories = $criteria->getBaseCondition('category')->getCategoryIds();
+
+        return $this->categoryTreeFacetResultBuilder->buildFacetResult(
+            $categories,
+            $catIds,
+            reset($currentCategories),
+            new CategoryFacet()
+        );
+    }
+
+    /**
+     * @param array $categories
+     * @param array $result
+     */
+    private function flattenCategoryIds(array $categories, array &$result)
+    {
+        foreach ($categories as $categoryId => $category) {
+            $result[] = $categoryId;
+            if (isset($category['subtree']) && 0 < count($category['subtree'])) {
+                $this->flattenCategoryIds($category['subtree'], $result);
+            }
+        }
+        $result = array_values(array_flip(array_flip($result)));
     }
 }

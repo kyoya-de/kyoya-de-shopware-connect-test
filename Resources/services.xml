@@ -90,6 +90,8 @@
         </service>
 
         <service id="MakairaConnect\Search\Result\FacetResultService">
+            <argument type="service" id="shopware_storefront.category_service"/>
+            <argument type="service" id="shopware_search.category_tree_facet_result_builder"/>
             <tag name="makaira_connect.result_facet_service" />
         </service>
 

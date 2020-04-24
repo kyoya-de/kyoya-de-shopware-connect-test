@@ -16,6 +16,7 @@ use function htmlspecialchars_decode;
 use function json_decode;
 use function json_encode;
 use const ENT_QUOTES;
+use const JSON_PRETTY_PRINT;
 
 class Api implements ApiInterface
 {
@@ -95,12 +96,15 @@ class Api implements ApiInterface
         }
 
         $response = $this->httpClient->request('POST', $request, json_encode($query), $headers);
+        $apiResult = json_decode($response->body, true);
 
         if ($response->status !== 200) {
-            throw new ConnectException("Connect to '{$request}' failed. HTTP-Status {$response->status}");
+            $message = "Connect to '{$request}' failed. HTTP-Status {$response->status}";
+            if (null !== $apiResult) {
+                $message .= "\n\n" . json_encode($apiResult, JSON_PRETTY_PRINT);
+            }
+            throw new ConnectException($message);
         }
-
-        $apiResult = json_decode($response->body, true);
 
         if (isset($apiResult['ok']) && $apiResult['ok'] === false) {
             throw new ConnectException("Error in Makaira: {$apiResult['message']}");
@@ -124,8 +128,12 @@ class Api implements ApiInterface
      *
      * @return Result
      */
-    private function parseResult(array $hits): Result
+    private function parseResult(?array $hits): ?Result
     {
+        if (null === $hits) {
+            return $hits;
+        }
+
         $hits['items'] = array_map(
             static function ($hit) {
                 return new ResultItem($hit);
