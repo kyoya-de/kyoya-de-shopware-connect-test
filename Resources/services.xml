@@ -69,8 +69,7 @@
         </service>
 
         <service id="makaira_connect.command.filter_update" class="MakairaConnect\Command\FilterUpdateCommand">
-            <argument type="service" id="makaira.api"/>
-            <argument type="service" id="models"/>
+            <argument type="service" id="MakairaConnect\Service\UpdateFilters"/>
             <tag name="console.command" />
         </service>
 
@@ -111,6 +110,12 @@
 
         <service id="MakairaConnect\Search\FacetHandler\DBALFacetHandler">
             <tag name="facet_handler_dbal" />
+        </service>
+
+        <service id="MakairaConnect\Service\UpdateFilters" public="true">
+            <argument type="service" id="makaira.api"/>
+            <argument type="service" id="models"/>
+
         </service>
     </services>
 </container>

@@ -14,7 +14,10 @@ namespace MakairaConnect;
 use Doctrine\ORM\Tools\SchemaTool;
 use MakairaConnect\DependencyInjection\ModifierCompilerPass;
 use MakairaConnect\Models\MakRevision as MakRevisionModel;
+use MakairaConnect\Service\UpdateFilters;
 use Shopware\Components\Plugin;
+use Shopware\Components\Plugin\Context\ActivateContext;
+use Shopware\Components\Plugin\Context\DeactivateContext;
 use Shopware\Components\Plugin\Context\InstallContext;
 use Shopware\Components\Plugin\Context\UninstallContext;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -89,7 +92,7 @@ class MakairaConnect extends Plugin
      */
     public function uninstall(UninstallContext $unInstallContext)
     {
-        //abbortion if the user chose to keep the userdata
+        //abort if the user chose to keep the userdata
         if ($unInstallContext->keepUserData()) {
             return;
         }
@@ -105,5 +108,14 @@ class MakairaConnect extends Plugin
         $this->fetchSchemaTool()->dropSchema(
             $this->getMappingClassesMetaData()
         );
+    }
+
+    /**
+     * This method can be overridden
+     */
+    public function deactivate(DeactivateContext $context)
+    {
+        $this->container->get(UpdateFilters::class)->disable();
+        parent::deactivate($context);
     }
 }
