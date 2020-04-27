@@ -20,13 +20,20 @@ class CriteriaRequestHandler implements CriteriaRequestHandlerInterface
     private $gateway;
 
     /**
+     * @var array
+     */
+    private $config;
+
+    /**
      * CriteriaRequestHandler constructor.
      *
      * @param CustomFacetGatewayInterface $gateway
+     * @param array                       $config
      */
-    public function __construct(CustomFacetGatewayInterface $gateway)
+    public function __construct(CustomFacetGatewayInterface $gateway, array $config)
     {
         $this->gateway = $gateway;
+        $this->config  = $config;
     }
 
     /**
@@ -38,6 +45,10 @@ class CriteriaRequestHandler implements CriteriaRequestHandlerInterface
      */
     public function handleRequest(Request $request, Criteria $criteria, ShopContextInterface $context)
     {
+        if (!$this->isMakairaActive($criteria)) {
+            return;
+        }
+
         $customFacets = $this->gateway->getAllCategoryFacets($context);
 
         foreach ($customFacets as $customFacet) {
@@ -71,5 +82,25 @@ class CriteriaRequestHandler implements CriteriaRequestHandlerInterface
         }
 
         $criteria->addCondition(new MakairaCondition($facet->getKey(), $facetParam, $facet->getType()));
+    }
+
+    /**
+     * @param Criteria $criteria
+     *
+     * @return bool
+     */
+    private function isMakairaActive(Criteria $criteria): bool
+    {
+        $hasSearch       = $criteria->hasBaseCondition('search');
+        $hasManufacturer = $criteria->hasBaseCondition('manufacturer');
+        $hasCategory     = $criteria->hasBaseCondition('category');
+
+        $isSearch       = $hasSearch;
+        $isManufacturer = $hasManufacturer && !$hasSearch;
+        $isCategory     = $hasCategory && !$hasSearch && !$hasManufacturer;
+
+        return ($isSearch && $this->config['makaira_search']) ||
+            ($isManufacturer && $this->config['makaira_manufacturer']) ||
+            ($isCategory && $this->config['makaira_category']);
     }
 }

@@ -71,7 +71,6 @@
         <service id="makaira_connect.command.filter_update" class="MakairaConnect\Command\FilterUpdateCommand">
             <argument type="service" id="makaira.api"/>
             <argument type="service" id="models"/>
-<!--            <argument>%makaira.filter_mapping%</argument>-->
             <tag name="console.command" />
         </service>
 
@@ -105,6 +104,8 @@
 
         <service id="MakairaConnect\Search\CriteriaRequestHandler">
             <argument type="service" id="shopware_storefront.custom_facet_gateway"/>
+            <argument type="expression">service('shopware.plugin.config_reader').getByPluginName(parameter('makaira_connect.plugin_name'))</argument>
+
             <tag name="criteria_request_handler" />
         </service>
     </services>
