@@ -108,5 +108,9 @@
 
             <tag name="criteria_request_handler" />
         </service>
+
+        <service id="MakairaConnect\Search\FacetHandler\DBALFacetHandler">
+            <tag name="facet_handler_dbal" />
+        </service>
     </services>
 </container>
