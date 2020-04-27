@@ -60,9 +60,9 @@ class MakRevision extends ModelEntity
     /**
      * @return int
      */
-    public function getSequence()
+    public function getSequence(): int
     {
-        return $this->sequence;
+        return (int) $this->sequence;
     }
 
     /**
