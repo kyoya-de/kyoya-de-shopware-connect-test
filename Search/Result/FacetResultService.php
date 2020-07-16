@@ -101,7 +101,7 @@ class FacetResultService implements FacetResultServiceInterface
      * @param Aggregation $aggregation
      * @param string      $formFieldName
      * @param bool        $active
-     * @param int|null    $conditionValue
+     * @param array|null  $conditionValue
      *
      * @return RangeFacetResult
      */
@@ -109,7 +109,7 @@ class FacetResultService implements FacetResultServiceInterface
         Aggregation $aggregation,
         string $formFieldName,
         bool $active,
-        ?int $conditionValue
+        ?array $conditionValue
     ): RangeFacetResult {
         return new RangeFacetResult(
             $aggregation->key,
