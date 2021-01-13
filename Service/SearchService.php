@@ -15,6 +15,8 @@ use Shopware\Bundle\SearchBundle\ProductSearchInterface;
 use Shopware\Bundle\SearchBundle\ProductSearchResult;
 use Shopware\Bundle\StoreFrontBundle\Service\ListProductServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
+use Shopware\Models\Article\Supplier;
+use Shopware\Models\Category\Category;
 use Traversable;
 use function array_map;
 use function reset;
@@ -55,6 +57,11 @@ class SearchService implements ProductSearchInterface
      * @var SortingParserInterface[]
      */
     private $sortingParser;
+    
+    /**
+     * @var searchResult
+     */
+    private $completeResult = null;
 
     /**
      * SearchService constructor.
@@ -133,6 +140,42 @@ class SearchService implements ProductSearchInterface
 
         $result = $this->api->search($query, $criteria->hasCondition('makaira_debug') ? 'true' : '');
 
+        $this->completeResult = $result;
+        
+        // get manufacturer results
+        $manufacturers = [];
+        if ($this->completeResult['manufacturer']) {
+            foreach ($this->completeResult['manufacturer']->items as $document) {
+                $manufacturers[] = $this->prepareManufacturerItem($document);
+            }
+        }
+        // filter out empty values
+        $manufacturers = array_filter($manufacturers);
+        $this->completeResult['manufacturer'] = $manufacturers;
+        
+        // get category results
+        $categories = [];
+        if ($result['category']) {
+            foreach ($result['category']->items as $document) {
+                $categories[] = $this->prepareCategoryItem($document);
+            }
+        }
+        // filter out empty values
+        $categories = array_filter($categories);
+        $this->completeResult['category'] = $categories;
+        
+        
+        // get searchable links results
+        $links = [];
+        if ($result['links']) {
+            foreach ($result['links']->items as $document) {
+                $links[] = $this->prepareLinkItem($document);
+            }
+        }
+        // filter out empty values
+        $links = array_filter($links);
+        $this->completeResult['links'] = $links;
+        
         $numbers  = array_map(
             static function (ResultItem $item) {
                 return $item->fields['ean'];
@@ -216,4 +259,58 @@ class SearchService implements ProductSearchInterface
 
         return $facets;
     }
+    
+    /**
+     * @return array
+     */
+    public function getCompleteResult()
+    {
+        return $this->completeResult;
+    }
+    
+    /**
+     * @return array
+     */
+    protected function prepareManufacturerItem($doc)
+    {
+        if (empty($doc->fields['manufacturer_title'])) {
+            return [];
+        }
+
+        $item['name']   = $doc->fields['manufacturer_title'];
+        $item['id']     = $doc->id;
+
+        return $item;
+    }
+    
+    /**
+     * @return array
+     */
+    protected function prepareCategoryItem($doc)
+    {
+        if (empty($doc->fields['category_title'])) {
+            return [];
+        }
+      
+        $item['name']   = $doc->fields['category_title'];
+        $item['id']     = $doc->id;
+
+        return $item;
+    }
+    
+    /**
+     * @return array
+     */
+    protected function prepareLinkItem($doc)
+    {
+        if (empty($doc->fields['title'])) {
+            return [];
+        }
+
+        $item['name'] = $doc->fields['title'];
+        $item['link'] = $doc->fields['url'];
+
+        return $item;
+    }
+    
 }
