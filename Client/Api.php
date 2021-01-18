@@ -64,7 +64,7 @@ class Api implements ApiInterface
         int $offset = 0,
         int $count = 10000
     ): array {
-        $request = "{$this->baseUrl}/search/filter";
+        $request = "{$this->baseUrl}/filter";
 
         $body = json_encode(compact('sort', 'direction', 'offset', 'count'));
 
