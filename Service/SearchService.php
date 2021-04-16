@@ -2,6 +2,7 @@
 
 namespace MakairaConnect\Service;
 
+use Doctrine\ORM\EntityManagerInterface;
 use Makaira\Constraints;
 use Makaira\Query;
 use Makaira\Result;
@@ -15,6 +16,7 @@ use Shopware\Bundle\SearchBundle\ProductSearchInterface;
 use Shopware\Bundle\SearchBundle\ProductSearchResult;
 use Shopware\Bundle\StoreFrontBundle\Service\ListProductServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
+use Shopware\Components\Model\QueryBuilder;
 use Shopware\Models\Article\Supplier;
 use Shopware\Models\Category\Category;
 use Traversable;
@@ -42,6 +44,11 @@ class SearchService implements ProductSearchInterface
      * @var ListProductServiceInterface
      */
     private $productService;
+
+    /**
+     * @var EntityManagerInterface
+     */
+    private $em;
 
     /**
      * @var FacetResultServiceInterface[]
@@ -79,6 +86,7 @@ class SearchService implements ProductSearchInterface
         ProductSearchInterface $innerService,
         ApiInterface $makairaApi,
         ListProductServiceInterface $productService,
+        EntityManagerInterface $entityManager,
         Traversable $facetResultServices,
         Traversable $conditionParser,
         Traversable $sortingParser
@@ -90,6 +98,7 @@ class SearchService implements ProductSearchInterface
         $this->facetResultServices = $facetResultServices;
         $this->conditionParser     = $conditionParser;
         $this->sortingParser       = $sortingParser;
+        $this->em                  = $entityManager;
     }
 
     /**
@@ -121,12 +130,20 @@ class SearchService implements ProductSearchInterface
         }
 
         if ($criteria->hasBaseCondition('category')) {
-            $categoryCondition                         = $criteria->getBaseCondition('category');
+            $categoryCondition = $criteria->getBaseCondition('category');
+            $categoryIds       = $categoryCondition->getCategoryIds();
+
+            if ($this->config['makaira_subcategory_products']) {
+                $categoryId    = reset($categoryIds);
+                $categoryIds   = $this->getSubCategoryIds($categoryId);
+                $categoryIds[] = $categoryId;
+            }
+
             $query->constraints[Constraints::CATEGORY] = array_map(
                 static function ($categoryId) {
                     return (string) $categoryId;
                 },
-                $categoryCondition->getCategoryIds()
+                $categoryIds
             );
         }
 
@@ -312,5 +329,33 @@ class SearchService implements ProductSearchInterface
 
         return $item;
     }
-    
+
+    /**
+     * @return array
+     */
+    protected function getSubCategoryIds($categoryId): array
+    {
+        $repo = $this->em->getRepository(Category::class);
+
+        /** @var QueryBuilder $qb */
+        $qb        = $repo->createQueryBuilder('c');
+        $queryPath = $qb->select('c.path')
+                        ->where($qb->expr()->eq('c.id', ':id'))
+                        ->setParameter('id', $categoryId)->getQuery();
+
+        $path = $queryPath->getSingleScalarResult();
+
+        $qb    = $repo->createQueryBuilder('c');
+        $query = $qb->select('c.id')
+                    ->where($qb->expr()->like('c.path', ':path'))
+                    ->setParameter('path', str_replace('||', '|', "%|{$categoryId}|{$path}|"))
+                    ->getQuery();
+
+        return array_map(
+            static function ($id) {
+                return (int) $id;
+            },
+            array_column($query->getScalarResult(), 'id')
+        );
+    }
 }
