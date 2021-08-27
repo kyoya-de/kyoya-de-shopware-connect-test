@@ -367,8 +367,6 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     {
         $productIds = $this->extractIds($revisions);
 
-        /** @var ContextService $contextService */
-        $contextService = $this->get('shopware_storefront.context_service');
         /** @var ProductService $productService */
         $productService = $this->get('shopware_storefront.product_service');
         /** @var ConfiguratorService $configuratorService */
