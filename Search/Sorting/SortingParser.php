@@ -59,7 +59,7 @@ class SortingParser implements SortingParserInterface
         }
 
         if (false !== $name) {
-            $sort[$name] = $sorting->getDirection();
+            $sortResult[$name] = $sorting->getDirection();
         }
     }
 }
