@@ -117,5 +117,28 @@
             <label lang="de">Empfehlungs Identifikator</label>
             <label lang="en">Recommendation Identifier</label>
         </element>
+
+        <element type="button">
+            <name>makaira_update_filter</name>
+            <label lang="de">Filter aktualisieren</label>
+            <label lang="en">Update filter</label>
+            <options>
+                <handler>
+                    <![CDATA[
+                    function() {
+                        Ext.Ajax.request({
+                            url: 'MakairaConnectConfigurationAction/updateFilters',
+                            success: function (response) {
+                                Shopware.Msg.createGrowlMessage(response.statusText, response.responseText);
+                            },
+                            failure: function (response) {
+                                Shopware.Msg.createGrowlMessage(response.statusText, response.responseText)
+                            }
+                        });
+                    }
+                    ]]>
+                </handler>
+            </options>
+        </element>
     </elements>
 </config>
