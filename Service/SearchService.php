@@ -36,11 +36,6 @@ class SearchService implements ProductSearchInterface
     private $api;
 
     /**
-     * @var ProductSearchInterface
-     */
-    private $innerService;
-
-    /**
      * @var ListProductServiceInterface
      */
     private $productService;
@@ -66,24 +61,23 @@ class SearchService implements ProductSearchInterface
     private $sortingParser;
     
     /**
-     * @var searchResult
+     * @var array
      */
-    private $completeResult = null;
+    private $completeResult = [];
 
     /**
      * SearchService constructor.
      *
      * @param array                       $config
-     * @param ProductSearchInterface      $innerService
      * @param ApiInterface                $makairaApi
      * @param ListProductServiceInterface $productService
+     * @param EntityManagerInterface      $entityManager
      * @param Traversable                 $facetResultServices
      * @param Traversable                 $conditionParser
      * @param Traversable                 $sortingParser
      */
     public function __construct(
         array $config,
-        ProductSearchInterface $innerService,
         ApiInterface $makairaApi,
         ListProductServiceInterface $productService,
         EntityManagerInterface $entityManager,
@@ -92,7 +86,6 @@ class SearchService implements ProductSearchInterface
         Traversable $sortingParser
     ) {
         $this->config              = $config;
-        $this->innerService        = $innerService;
         $this->api                 = $makairaApi;
         $this->productService      = $productService;
         $this->facetResultServices = $facetResultServices;
@@ -105,12 +98,12 @@ class SearchService implements ProductSearchInterface
      * @param Criteria                $criteria
      * @param ProductContextInterface $context
      *
-     * @return ProductSearchResult
+     * @return array|false
      */
     public function search(Criteria $criteria, ProductContextInterface $context)
     {
         if (!$this->isMakairaActive($criteria)) {
-            return $this->innerService->search($criteria, $context);
+            return false;
         }
 
         $query              = new Query();
@@ -203,7 +196,7 @@ class SearchService implements ProductSearchInterface
 
         $facets = $this->mapFacets($result['product'], $criteria, $context);
 
-        return new ProductSearchResult($products, $result['product']->total, $facets, $criteria, $context);
+        return [$products, $result, $facets];
     }
 
     /**
