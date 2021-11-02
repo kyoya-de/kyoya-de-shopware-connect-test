@@ -5,10 +5,18 @@ namespace MakairaConnect\Subscriber;
 use Enlight\Event\SubscriberInterface;
 use Enlight_Controller_Action;
 use Enlight_Controller_Request_RequestHttp;
-use Enlight_Controller_Response_ResponseHttp;
+use Makaira\Constraints;
+use Makaira\RecommendationQuery;
+use MakairaConnect\Client\ApiInterface;
 
 class RecommendationSubscriber implements SubscriberInterface
 {
+    private ApiInterface $api;
+
+    public function __construct(ApiInterface $api)
+    {
+        $this->api = $api;
+    }
 
     /**
      * only add Events::<classes>
@@ -22,28 +30,69 @@ class RecommendationSubscriber implements SubscriberInterface
         ];
     }
 
+    /**
+     * @throws \Makaira\Connect\Exception
+     */
     public function onEnlightControllerActionPostDispatchFrontendDetail(\Enlight_Event_EventArgs $arguments)
     {
-        /** @var $subject Enlight_Controller_Action */
-        $subject = $arguments->get('subject');
+        $config = Shopware()->Container()->get('shopware.plugin.cached_config_reader')->getByPluginName('MakairaConnect');
+        if ($config['makaira_recommendations_active']) {
+            /** @var $subject Enlight_Controller_Action */
+            $subject = $arguments->get('subject');
 
-        /** @var $request Enlight_Controller_Request_RequestHttp */
-        $request = $arguments->getRequest();
+            $view = $subject->View();
 
-        /** @var $response Enlight_Controller_Response_ResponseHttp */
-        $response = $arguments->getResponse();
+            $sArticle = $view->getAssign('sArticle');
 
-        $view = $subject->View();
-        $result = $this->getRecommendationItems();
+            $sArticle['sSimilarArticles'] = $this->getRecommendationItems($sArticle, $config, $arguments->getRequest());
 
-        $sArticle = $view->getAssign('sArticle');
-        die(var_dump($sArticle['sSimilarArticles']));
-        $sArticle['sSimilarArticles'] = [];
-        $view->assign('sArticle', $sArticle);
+            $view->assign('sArticle', $sArticle);
+        }
     }
 
-    private function getRecommendationItems(): array
+    /**
+     * @throws \Makaira\Connect\Exception
+     */
+    private function getRecommendationItems($sArticle, $config, Enlight_Controller_Request_RequestHttp $request): array
     {
-        return [];
+        $query = new RecommendationQuery();
+
+        $query->setConstraint(Constraints::OI_USER_AGENT, $request->getHeader('User-Agent'));
+        $query->setConstraint(Constraints::OI_USER_ID, $request->getClientIp());
+        $session = Shopware()->Session();
+        if (!empty($session->sUserId)) {
+            $query->setConstraint(Constraints::OI_USER_ID, $session->sUserId);
+        }
+
+        if (!empty($_COOKIE['oiLocalTimeZone'])) {
+            $query->setConstraint(Constraints::OI_USER_TIMEZONE, $_COOKIE['oiLocalTimeZone']);
+        }
+
+        $shop = Shopware()->Shop();
+        $query->setConstraint(Constraints::SHOP, $shop->getId());
+
+        $locale = $shop->getLocale();
+        $language = substr($locale->getLocale(), 0, 2);
+        $query->setConstraint(Constraints::LANGUAGE, $language);
+
+        $query->offset = 0;
+        $query->count = 10;
+
+        $query->recommendationId = $config['makaira_recommendations_identifier'] ?? 'none';
+
+        $query->productId = $sArticle['articleID'];
+
+        $query->fields = ['id'];
+
+        $recommendedProducts = $this->api->getRecommendedProducts($query);
+
+        $sSimilarArticles = [];
+
+        $shopwareArticleService = Shopware()->Modules()->Articles();
+        foreach ($recommendedProducts as $recommendedProduct) {
+            $sSimilarArticles[] = $shopwareArticleService->sGetArticleById($recommendedProduct['id']);
+        }
+
+        return $sSimilarArticles;
     }
 }

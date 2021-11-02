@@ -35,6 +35,15 @@
             <tag name="shopware.event_subscriber" />
         </service>
 
+        <service id="makaira_connect.subscriber.event.recommendation" class="MakairaConnect\Subscriber\RecommendationSubscriber">
+            <tag name="shopware.event_subscriber" />
+            <argument type="service" id="makaira.api"/>
+        </service>
+
+        <service id="makaira_connect.subscriber.event.javascript" class="MakairaConnect\Subscriber\JavascriptSubscriber">
+            <tag name="shopware.event_subscriber" />
+        </service>
+
         <service id="makaira_connect.subscriber.event.doctrine"
                  class="MakairaConnect\Subscriber\DoctrineSubscriber">
 
