@@ -5,17 +5,21 @@ namespace MakairaConnect\Subscriber;
 use Enlight\Event\SubscriberInterface;
 use Enlight_Controller_Action;
 use Enlight_Controller_Request_RequestHttp;
+use Makaira\Connect\Exception;
 use Makaira\Constraints;
 use Makaira\RecommendationQuery;
 use MakairaConnect\Client\ApiInterface;
+use Monolog\Logger;
 
 class RecommendationSubscriber implements SubscriberInterface
 {
     private ApiInterface $api;
+    private Logger $logger;
 
-    public function __construct(ApiInterface $api)
+    public function __construct(ApiInterface $api, Logger $logger)
     {
         $this->api = $api;
+        $this->logger = $logger;
     }
 
     /**
@@ -31,27 +35,31 @@ class RecommendationSubscriber implements SubscriberInterface
     }
 
     /**
-     * @throws \Makaira\Connect\Exception
+     * @throws Exception
      */
     public function onEnlightControllerActionPostDispatchFrontendDetail(\Enlight_Event_EventArgs $arguments)
     {
-        $config = Shopware()->Container()->get('shopware.plugin.cached_config_reader')->getByPluginName('MakairaConnect');
-        if ($config['makaira_recommendations_active']) {
-            /** @var $subject Enlight_Controller_Action */
-            $subject = $arguments->get('subject');
+        try {
+            $config = Shopware()->Container()->get('shopware.plugin.cached_config_reader')->getByPluginName('MakairaConnect');
+            if ($config['makaira_recommendations_active']) {
+                /** @var $subject Enlight_Controller_Action */
+                $subject = $arguments->get('subject');
 
-            $view = $subject->View();
+                $view = $subject->View();
 
-            $sArticle = $view->getAssign('sArticle');
+                $sArticle = $view->getAssign('sArticle');
 
-            $sArticle['sSimilarArticles'] = $this->getRecommendationItems($sArticle, $config, $arguments->getRequest());
+                $sArticle['sSimilarArticles'] = $this->getRecommendationItems($sArticle, $config, $arguments->getRequest());
 
-            $view->assign('sArticle', $sArticle);
+                $view->assign('sArticle', $sArticle);
+            }
+        } catch (Exception $exception) {
+            $this->logger->error('Makaira API Error. Message: '. $exception->getMessage());
         }
     }
 
     /**
-     * @throws \Makaira\Connect\Exception
+     * @throws Exception
      */
     private function getRecommendationItems($sArticle, $config, Enlight_Controller_Request_RequestHttp $request): array
     {
