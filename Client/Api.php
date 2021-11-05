@@ -186,7 +186,7 @@ class Api implements ApiInterface
      */
     public function getMakairaRecommendations()
     {
-        $url = "$this->baseUrl/reco";
+        $url = "{$this->baseUrl}/reco";
 
         $headers = $this->defaultHeaders;
         if (!empty($debug)) {
