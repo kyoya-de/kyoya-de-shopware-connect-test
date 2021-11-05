@@ -160,11 +160,11 @@ class Api implements ApiInterface
     {
         $this->sanitizeLanguage($query);
 
-        $url = "$this->baseUrl/recommendation/public";
+        $url = "{$this->baseUrl}/recommendation/public";
 
         $headers = $this->defaultHeaders;
         if (!empty($debug)) {
-            $headers[] = "X-Makaira-Trace: $debug";
+            $headers[] = "X-Makaira-Trace: {$debug}";
         }
 
         $response = $this->httpClient->request('POST', $url, json_encode($query), $headers);
@@ -190,7 +190,7 @@ class Api implements ApiInterface
 
         $headers = $this->defaultHeaders;
         if (!empty($debug)) {
-            $headers[] = "X-Makaira-Trace: $debug";
+            $headers[] = "X-Makaira-Trace: {$debug}";
         }
 
         $response = $this->httpClient->request('GET', $url, null, $headers);

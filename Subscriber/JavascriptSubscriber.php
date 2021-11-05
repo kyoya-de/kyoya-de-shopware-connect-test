@@ -22,7 +22,7 @@ class JavascriptSubscriber implements SubscriberInterface
 
     public function collectJs(\Enlight_Event_EventArgs $args)
     {
-        $jsFiles = glob(__DIR__ . '../Resources/frontend/js/*.js');
+        $jsFiles = glob(__DIR__ . '/../Resources/frontend/js/*.js');
         return new ArrayCollection($jsFiles);
     }
 }
