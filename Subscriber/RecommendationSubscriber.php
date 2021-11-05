@@ -7,6 +7,7 @@ use Enlight_Controller_Action;
 use Enlight_Controller_Request_RequestHttp;
 use Makaira\Connect\Exception;
 use Makaira\Constraints;
+use Makaira\Exceptions\TimeoutException;
 use Makaira\RecommendationQuery;
 use MakairaConnect\Client\ApiInterface;
 use Monolog\Logger;
@@ -55,6 +56,8 @@ class RecommendationSubscriber implements SubscriberInterface
             }
         } catch (Exception $exception) {
             $this->logger->error('Makaira API Error. Message: '. $exception->getMessage());
+        } catch (TimeoutException $timeoutException) {
+            $this->logger->error('Makaira API connection timed out. Message: '. $timeoutException->getMessage());
         }
     }
 
