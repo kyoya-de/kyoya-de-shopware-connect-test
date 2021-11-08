@@ -120,8 +120,8 @@
 
         <element type="button">
             <name>makaira_update_filter</name>
-            <label lang="de">Filter aktualisieren</label>
-            <label lang="en">Update filter</label>
+            <label lang="de">Filter synchronisieren</label>
+            <label lang="en">Synchronize filter</label>
             <options>
                 <handler>
                     <![CDATA[
