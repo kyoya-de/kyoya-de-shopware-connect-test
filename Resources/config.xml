@@ -15,6 +15,12 @@
         </element>
 
         <element required="false" type="text" scope="locale">
+            <name>makaira_tracking_page_id</name>
+            <label lang="de">Seiten-ID für das Tracking</label>
+            <label lang="en">Tracking Page-ID</label>
+        </element>
+
+        <element required="false" type="text" scope="locale">
             <name>makaira_connect_load_limit</name>
             <label lang="de">Last Limitierung</label>
             <label lang="en">Load Limitation</label>
