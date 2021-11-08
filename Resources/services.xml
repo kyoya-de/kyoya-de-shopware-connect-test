@@ -33,6 +33,7 @@
 
         <service id="makaira_connect.subscriber.event.shopware" class="MakairaConnect\Subscriber\ShopwareSubscriber">
             <tag name="shopware.event_subscriber" />
+            <argument type="expression">service('kernel').getPlugins()[parameter('makaira_connect.plugin_name')]</argument>
         </service>
 
         <service id="makaira_connect.subscriber.event.doctrine"

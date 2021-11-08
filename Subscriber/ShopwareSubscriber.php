@@ -3,6 +3,7 @@
 namespace MakairaConnect\Subscriber;
 
 use Enlight\Event\SubscriberInterface;
+use MakairaConnect\MakairaConnect;
 use Psr\Container\ContainerInterface;
 use Enlight_Event_EventArgs;
 use MakairaConnect\Repositories\MakRevisionRepository;
@@ -18,10 +19,16 @@ class ShopwareSubscriber implements SubscriberInterface
      */
     private $container;
 
-    public function __construct() {
+    /**
+     * @var MakairaConnect
+     */
+    private $makairaConnect;
+
+    public function __construct(MakairaConnect $makairaConnect) {
         $this->makRevisionRepo = Shopware()->Models()->getRepository(MakRevision::class);
         
         $this->container = Shopware()->Container();
+        $this->makairaConnect = $makairaConnect;
     }
 
     /**
@@ -31,6 +38,7 @@ class ShopwareSubscriber implements SubscriberInterface
     public static function getSubscribedEvents(): array {
         return [
             'Enlight_Controller_Action_PostDispatch_Frontend_AjaxSearch' => 'modifySearchResults',
+            'Enlight_Controller_Action_PostDispatchSecure_Frontend' => 'onFrontendDispatch'
         ];
     }
     
@@ -45,4 +53,14 @@ class ShopwareSubscriber implements SubscriberInterface
         }
         $view->assign('makairaResult', $searchResult);
     }
+
+    public function onFrontendDispatch(\Enlight_Controller_ActionEventArgs $args)
+    {
+        $subject = $args->getSubject();
+
+        $viewPath = $this->makairaConnect->getPath() . '/Resources/Views';
+
+        $subject->View()->addTemplateDir($viewPath);
+    }
+
 }
