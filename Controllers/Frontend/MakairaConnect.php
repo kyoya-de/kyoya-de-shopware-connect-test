@@ -8,7 +8,6 @@ use MakairaConnect\Mapper;
 use MakairaConnect\Models\MakRevision;
 use MakairaConnect\Repositories\MakRevisionRepository;
 use Shopware\Bundle\StoreFrontBundle\Service\Core\CategoryService;
-use Shopware\Bundle\StoreFrontBundle\Service\Core\ConfiguratorService;
 use Shopware\Bundle\StoreFrontBundle\Service\Core\ContextService;
 use Shopware\Bundle\StoreFrontBundle\Service\Core\ManufacturerService;
 use Shopware\Bundle\StoreFrontBundle\Service\Core\ProductService;
@@ -16,6 +15,8 @@ use Shopware\Bundle\StoreFrontBundle\Service\Core\PropertyService;
 use Shopware\Bundle\StoreFrontBundle\Struct\Category;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product;
 use Shopware\Components\CSRFWhitelistAware;
+use Shopware\Components\Model\ModelManager;
+use Shopware\Models\Article\Detail;
 use Shopware\Models\Shop\Locale;
 use Shopware\Models\Shop\Repository;
 use Shopware\Models\Shop\Shop;
@@ -358,6 +359,30 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     }
 
     /**
+     * @param Product $product
+     * @return Product[]
+     * @throws Exception
+     */
+    private function getVariants(Product $product): array
+    {
+        /**@var ModelManager $doctrine */
+        $doctrine = $this->get('models');
+        $variantRepo = $doctrine->getRepository(Detail::class);
+        $variants = $variantRepo->findBy([
+            'articleId' => $product->getId()
+        ]);
+
+        $variantOrderNumbers = [];
+        foreach ($variants as $variant) {
+            $variantOrderNumbers[] = $variant->getNumber();
+        }
+
+        /** @var ProductService $productService */
+        $productService = $this->get('shopware_storefront.product_service');
+        return $productService->getList($variantOrderNumbers, $this->productContext);
+    }
+
+    /**
      * @param MakRevision[] $revisions
      *
      * @return array
@@ -367,12 +392,8 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     {
         $productIds = $this->extractIds($revisions);
 
-        /** @var ContextService $contextService */
-        $contextService = $this->get('shopware_storefront.context_service');
         /** @var ProductService $productService */
         $productService = $this->get('shopware_storefront.product_service');
-        /** @var ConfiguratorService $configuratorService */
-        $configuratorService = $this->get('shopware_storefront.configurator_service');
 
         $products = $productService->getList($productIds, $this->productContext);
 
@@ -386,15 +407,15 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         /** @var Mapper\EntityMapper $mapper */
         $mapper = $this->get('makaira_connect.mapper');
 
-        $changes = [
+        [
             array_map(
-                function (Product $product) use ($revisions, $mapper, $configuratorService) {
+                function (Product $product) use ($revisions, $mapper) {
                     return $this->buildChangesHead(
                         $revisions[$product->getNumber()],
                         $mapper->mapProduct(
                             $product,
-                            $this->productContext,
-                            $configuratorService->getProductConfigurator($product, $this->productContext, [])
+                            $this->getVariants($product),
+                            $this->productContext
                         )
                     );
                 },
