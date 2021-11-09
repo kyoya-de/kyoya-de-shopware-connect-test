@@ -48,7 +48,7 @@
         </service>
 
         <service id="MakairaConnect\Command\TouchAllCommand">
-            <tag name="console.command" />
+            <tag name="console.command" command="makaira:touch-all" />
         </service>
 
         <service id="makaira.http_client.curl" class="Makaira\HttpClient\Curl">
@@ -69,12 +69,12 @@
 
         <service id="makaira_connect.command.search" class="MakairaConnect\Command\SearchCommand">
             <argument type="service" id="makaira.api"/>
-            <tag name="console.command" />
+            <tag name="console.command" command="makaira:search" />
         </service>
 
         <service id="makaira_connect.command.filter_update" class="MakairaConnect\Command\FilterUpdateCommand">
             <argument type="service" id="MakairaConnect\Service\UpdateFilters"/>
-            <tag name="console.command" />
+            <tag name="console.command" command="makaira:filter:update" />
         </service>
 
         <service
