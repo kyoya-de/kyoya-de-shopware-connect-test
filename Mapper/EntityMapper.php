@@ -295,8 +295,9 @@ class EntityMapper
             $price = ($product->getCheapestPrice() ?? $product->getVariantPrice())->getCalculatedPrice();
         }
 
-        if (null !== ($releaseDate = $product->getReleaseDate())) {
-            $releaseDate = $releaseDate->format(DateTimeInterface::ATOM);
+        $releaseDate = '0001-01-01T00:00:00';
+        if (null !== ($releaseDateObject = $product->getReleaseDate())) {
+            $releaseDate = $releaseDateObject->format(DateTimeInterface::ATOM);
         }
 
         $manufacturerTitle = '';
