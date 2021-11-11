@@ -35,10 +35,25 @@
             <tag name="shopware.event_subscriber" />
         </service>
 
-        <service id="makaira_connect.subscriber.event.doctrine"
-                 class="MakairaConnect\Subscriber\DoctrineSubscriber">
-
+        <service id="makaira_connect.subscriber.event.doctrine" class="MakairaConnect\Subscriber\DoctrineSubscriber">
             <tag name="doctrine.event_subscriber" />
+            <argument type="service" id="pluginlogger"/>
+        </service>
+
+        <service id="category.repository" class="Doctrine\ORM\EntityRepository">
+            <factory service="models" method="getRepository"/>
+            <argument>Shopware\Models\Category\Category</argument>
+        </service>
+
+        <service id="makaira.revision.repository" class="Doctrine\ORM\EntityRepository">
+            <factory service="models" method="getRepository"/>
+            <argument>MakairaConnect\Models\MakRevision</argument>
+        </service>
+
+        <service id="makaira_connect.subscriber.event.category" class="MakairaConnect\Subscriber\CategorySubscriber">
+            <tag name="shopware.event_subscriber" />
+            <argument type="service" id="category.repository"/>
+            <argument type="service" id="makaira.revision.repository"/>
         </service>
 
         <service id="makaira_connect.mapper" class="MakairaConnect\Mapper\EntityMapper" public="true">

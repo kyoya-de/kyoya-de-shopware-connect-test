@@ -5,6 +5,8 @@ namespace MakairaConnect\Mapper;
 use DateTime;
 use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\NonUniqueResultException;
+use Doctrine\ORM\NoResultException;
 use Exception;
 use MakairaConnect\Modifier\CategoryModifierInterface;
 use MakairaConnect\Modifier\ManufacturerModifierInterface;
@@ -15,6 +17,8 @@ use Shopware\Bundle\StoreFrontBundle\Struct\Product;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContext;
 use Shopware\Components\Routing\RouterInterface;
 use Shopware\Models\Category\Category;
+use Shopware\Models\Order\Detail;
+use Shopware\Models\Order\Status;
 use function array_map;
 use function array_pop;
 use function count;
@@ -228,11 +232,13 @@ class EntityMapper
     }
 
     /**
-     * @param Product     $product
+     * @param Product $product
      * @param ShopContext $context
-     * @param bool        $asVariant
+     * @param bool $asVariant
      *
      * @return array
+     * @throws NoResultException
+     * @throws NonUniqueResultException
      */
     protected function mapCommonProductData(Product $product, ShopContext $context, $asVariant): array
     {
@@ -331,7 +337,7 @@ class EntityMapper
             'shortdesc'                    => $product->getShortDescription(),
             'longdesc'                     => $product->getLongDescription(),
             'price'                        => $price,
-            'soldamount'                   => 0,
+            'soldamount'                   => $this->getSoldAmount($product, $asVariant),
             'searchable'                   => true,
             'searchkeys'                   => '',
             'url'                          => $url,
@@ -380,11 +386,13 @@ class EntityMapper
     }
 
     /**
-     * @param Product     $variant
+     * @param Product $variant
      * @param ShopContext $context
-     * @param Set[]       $propertySets
+     * @param Set[] $propertySets
      *
      * @return array
+     * @throws NoResultException
+     * @throws NonUniqueResultException
      */
     public function mapVariant(Product $variant, ShopContext $context, array $propertySets): array
     {
@@ -469,5 +477,32 @@ class EntityMapper
         $this->manufacturerModifiers[] = $manufacturerModifier;
 
         return $this;
+    }
+
+    /**
+     * @throws NonUniqueResultException
+     * @throws NoResultException
+     */
+    private function getSoldAmount(Product $product, $isVariant): int
+    {
+        $orderDetailRepo = $this->em->getRepository(Detail::class);
+        $builder = $orderDetailRepo->createQueryBuilder('od');
+        $builder->select([
+            'SUM(od.quantity) AS sold_amount',
+        ])
+            ->innerJoin('od.order', 'o')
+            ->where('o.status NOT IN (:status)')
+            ->setParameter('status', [Status::ORDER_STATE_CANCELLED_REJECTED, Status::ORDER_STATE_CANCELLED])
+            ->andWhere('od.mode = 0');
+
+        if ($isVariant) {
+            $builder->andWhere('od.articleNumber = :articleNumber')
+                ->setParameter('articleNumber', $product->getNumber());
+        } else {
+            $builder->andWhere('od.articleId = :articleId')
+                ->setParameter('articleId', $product->getId());
+        }
+
+        return (int)$builder->getQuery()->getSingleScalarResult();
     }
 }
