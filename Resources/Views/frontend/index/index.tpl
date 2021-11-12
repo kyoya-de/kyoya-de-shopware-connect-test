@@ -45,7 +45,7 @@
                     _paq.push(['addEcommerceItem',
                         '{$sBasketItem.ordernumber|escape:'javascript'}',
                         '{$sBasketItem.articlename|escape:'javascript'}',
-                        'TODO:category',
+                        '',
                         '{$sBasketItem.priceNumeric|round:2}',
                         '{$sBasketItem.quantity}',
                     ]);
@@ -72,7 +72,6 @@
                     {$tax = $tax + $value}
                 {/foreach}
 
-                {* TODO: Eventually remove discount products from addEcommerceItem calls *}
                 _paq.push([
                     'trackEcommerceOrder',
                     '{$sOrderNumber}',
