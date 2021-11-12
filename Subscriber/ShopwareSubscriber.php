@@ -5,11 +5,6 @@ namespace MakairaConnect\Subscriber;
 use Enlight\Event\SubscriberInterface;
 use Enlight_Controller_ActionEventArgs;
 use MakairaConnect\Service\SearchService;
-use Psr\Container\ContainerInterface;
-use Enlight_Event_EventArgs;
-use MakairaConnect\Repositories\MakRevisionRepository;
-use MakairaConnect\Models\MakRevision;
-use Shopware\Bundle\SearchBundle\ProductSearchInterface;
 
 class ShopwareSubscriber implements SubscriberInterface 
 {

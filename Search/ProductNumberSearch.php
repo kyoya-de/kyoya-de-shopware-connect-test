@@ -6,7 +6,6 @@ use MakairaConnect\Service\SearchService;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\ProductNumberSearchInterface;
 use Shopware\Bundle\SearchBundle\ProductNumberSearchResult;
-use Shopware\Bundle\StoreFrontBundle\Service\Core\ShopContextFactory;
 use Shopware\Bundle\StoreFrontBundle\Struct;
 
 class ProductNumberSearch implements ProductNumberSearchInterface

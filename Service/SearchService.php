@@ -12,18 +12,15 @@ use MakairaConnect\Search\Condition\ConditionParserInterface;
 use MakairaConnect\Search\Result\FacetResultServiceInterface;
 use MakairaConnect\Search\Sorting\SortingParserInterface;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundle\ProductSearchInterface;
-use Shopware\Bundle\SearchBundle\ProductSearchResult;
 use Shopware\Bundle\StoreFrontBundle\Service\ListProductServiceInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
 use Shopware\Components\Model\QueryBuilder;
-use Shopware\Models\Article\Supplier;
 use Shopware\Models\Category\Category;
 use Traversable;
 use function array_map;
 use function reset;
 
-class SearchService implements ProductSearchInterface
+class SearchService
 {
     /**
      * @var array
