@@ -103,6 +103,7 @@
             <argument type="tagged" tag="makaira_connect.result_facet_service"/>
             <argument type="tagged" tag="makaira_connect.condition_parser"/>
             <argument type="tagged" tag="makaira_connect.sorting_parser"/>
+            <argument type="service" id="makaira_connect.logger" />
         </service>
 
         <service id="MakairaConnect\Search\Result\FacetResultService">
