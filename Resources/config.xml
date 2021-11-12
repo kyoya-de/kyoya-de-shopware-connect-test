@@ -20,6 +20,12 @@
             <label lang="en">Tracking Page-ID</label>
         </element>
 
+        <element type="boolean">
+            <name>makaira_tracking_active</name>
+            <label lang="de">Makaira Tracking aktivieren</label>
+            <label lang="en">Activate Makaira Tracking</label>
+        </element>
+
         <element required="false" type="text" scope="locale">
             <name>makaira_connect_load_limit</name>
             <label lang="de">Last Limitierung</label>

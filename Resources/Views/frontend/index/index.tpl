@@ -2,7 +2,7 @@
 
 {block name='frontend_index_header_javascript_tracking'}
     {$smarty.block.parent}
-    {if {config name='makaira_tracking_page_id' namespace='MakairaConnect'}}
+    {if {config name='makaira_tracking_page_id' namespace='MakairaConnect'} and {config name='makaira_tracking_active' namespace='MakairaConnect'}}
         <script type="text/javascript">
             var _paq = window._paq || [];
 
