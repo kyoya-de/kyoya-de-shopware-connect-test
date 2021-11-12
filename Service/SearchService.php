@@ -13,7 +13,7 @@ use MakairaConnect\Search\Result\FacetResultServiceInterface;
 use MakairaConnect\Search\Sorting\SortingParserInterface;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\StoreFrontBundle\Service\ListProductServiceInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use Shopware\Components\Model\QueryBuilder;
 use Shopware\Models\Category\Category;
 use Traversable;
@@ -92,12 +92,12 @@ class SearchService
     }
 
     /**
-     * @param Criteria                $criteria
-     * @param ProductContextInterface $context
+     * @param Criteria             $criteria
+     * @param ShopContextInterface $context
      *
      * @return array|false
      */
-    public function search(Criteria $criteria, ProductContextInterface $context)
+    public function search(Criteria $criteria, ShopContextInterface $context)
     {
         if (!$this->isMakairaActive($criteria)) {
             return false;
@@ -148,7 +148,7 @@ class SearchService
         $result = $this->api->search($query, $criteria->hasCondition('makaira_debug') ? 'true' : '');
 
         $this->completeResult = $result;
-        
+
         // get manufacturer results
         $manufacturers = [];
         if ($this->completeResult['manufacturer']) {
@@ -159,7 +159,7 @@ class SearchService
         // filter out empty values
         $manufacturers = array_filter($manufacturers);
         $this->completeResult['manufacturer'] = $manufacturers;
-        
+
         // get category results
         $categories = [];
         if ($result['category']) {
@@ -170,8 +170,8 @@ class SearchService
         // filter out empty values
         $categories = array_filter($categories);
         $this->completeResult['category'] = $categories;
-        
-        
+
+
         // get searchable links results
         $links = [];
         if ($result['links']) {
@@ -182,7 +182,7 @@ class SearchService
         // filter out empty values
         $links = array_filter($links);
         $this->completeResult['links'] = $links;
-        
+
         $numbers  = array_map(
             static function (ResultItem $item) {
                 return $item->fields['ean'];
@@ -218,11 +218,11 @@ class SearchService
 
     /**
      * @param Criteria                $criteria
-     * @param ProductContextInterface $context
+     * @param ShopContextInterface $context
      *
      * @return array
      */
-    private function mapSorting(Criteria $criteria, ProductContextInterface $context): array
+    private function mapSorting(Criteria $criteria, ShopContextInterface $context): array
     {
         $sort = [];
 
@@ -238,9 +238,9 @@ class SearchService
     /**
      * @param Criteria                $criteria
      * @param Query                   $query
-     * @param ProductContextInterface $context
+     * @param ShopContextInterface $context
      */
-    protected function mapConditions(Criteria $criteria, Query $query, ProductContextInterface $context): void
+    protected function mapConditions(Criteria $criteria, Query $query, ShopContextInterface $context): void
     {
         foreach ($criteria->getConditions() as $condition) {
             foreach ($this->conditionParser as $conditionParser) {
@@ -252,11 +252,11 @@ class SearchService
     /**
      * @param Result                  $product
      * @param Criteria                $criteria
-     * @param ProductContextInterface $context
+     * @param ShopContextInterface $context
      *
      * @return array
      */
-    protected function mapFacets(Result $product, Criteria $criteria, ProductContextInterface $context): array
+    protected function mapFacets(Result $product, Criteria $criteria, ShopContextInterface $context): array
     {
         $facets = [];
 

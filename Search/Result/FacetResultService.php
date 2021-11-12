@@ -16,7 +16,7 @@ use Shopware\Bundle\SearchBundle\FacetResult\ValueListFacetResult;
 use Shopware\Bundle\SearchBundle\FacetResult\ValueListItem;
 use Shopware\Bundle\SearchBundle\FacetResultInterface;
 use Shopware\Bundle\StoreFrontBundle\Service\CategoryServiceInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use function array_flip;
 use function array_values;
 use function in_array;
@@ -56,16 +56,16 @@ class FacetResultService implements FacetResultServiceInterface
     }
 
     /**
-     * @param FacetResultInterface[]  $facets
-     * @param Criteria                $criteria
-     * @param Result                  $result
-     * @param ProductContextInterface $context
+     * @param FacetResultInterface[] $facets
+     * @param Criteria               $criteria
+     * @param Result                 $result
+     * @param ShopContextInterface   $context
      */
     public function parseFacets(
         array &$facets,
         Result $result,
         Criteria $criteria,
-        ProductContextInterface $context
+        ShopContextInterface $context
     ): void {
         foreach ($result->aggregations as $aggregation) {
             $condition      = $criteria->getCondition("makaira_{$aggregation->key}");
@@ -129,7 +129,7 @@ class FacetResultService implements FacetResultServiceInterface
      * @param string      $formFieldName
      * @param bool        $isActive
      *
-     * @return mixed
+     * @return FacetResultInterface
      */
     protected function buildListFacet(Aggregation $aggregation, string $formFieldName, bool $isActive)
     {
@@ -168,16 +168,16 @@ class FacetResultService implements FacetResultServiceInterface
     }
 
     /**
-     * @param Aggregation             $aggregation
-     * @param Criteria                $criteria
-     * @param ProductContextInterface $context
+     * @param Aggregation          $aggregation
+     * @param Criteria             $criteria
+     * @param ShopContextInterface $context
      *
      * @return TreeFacetResult|null
      */
     protected function buildCategoryTreeFacet(
         Aggregation $aggregation,
         Criteria $criteria,
-        ProductContextInterface $context
+        ShopContextInterface $context
     ): ?TreeFacetResult {
         $catIds = [];
         $this->flattenCategoryIds($aggregation->values, $catIds);
