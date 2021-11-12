@@ -388,5 +388,5 @@ class SearchService
         $facets = $this->mapFacets($result['product'], $criteria, $context);
 
         return [$products, $result, $facets];
-}
+    }
 }
