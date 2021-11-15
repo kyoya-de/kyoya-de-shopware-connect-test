@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Create new Gitlab pipeline for Shopware 5
         run: |
-          curl -XPOST -H "PRIVATE-TOKEN: ${{ secrets.GITLAB_TOKEN }}" "https://gitlab.marmalade.de/api/v4/projects/${{ secrets.GITLAB_PROJECT_ID }}/pipeline?ref=stage"
+          curl -XPOST -H "PRIVATE-TOKEN: ${{ secrets.GITLAB_TOKEN }}" "https://gitlab.marmalade.de/api/v4/projects/${{ secrets.GITLAB_PROJECT_ID }}/pipeline?ref=${{ secrets.GITLAB_SHOPWARE_REF }}"
   release:
     name: Create a new release
     runs-on: ubuntu-latest
