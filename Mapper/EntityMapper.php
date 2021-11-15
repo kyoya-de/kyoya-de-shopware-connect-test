@@ -310,8 +310,9 @@ class EntityMapper
             $releaseDate = $releaseDate->format(DateTimeInterface::ATOM);
         }
 
-        if (null !== ($creationDate = $product->getCreatedAt())) {
-            $creationDate = $creationDate->format(DateTimeInterface::ATOM);
+        $creationDate = '0001-01-01T00:00:00';
+        if (null !== ($creationDateObject = $product->getCreatedAt())) {
+            $creationDate = $creationDateObject->format(DateTimeInterface::ATOM);
         }
 
         $manufacturerTitle = '';
