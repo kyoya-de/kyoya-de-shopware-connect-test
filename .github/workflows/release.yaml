@@ -3,12 +3,21 @@ on:
   push:
     branches:
       - stable
+      - stage
 
 jobs:
+  stage-deployment:
+    name: Trigger a new stage deployment
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/stage'
+    steps:
+      - name: Create new Gitlab pipeline for Shopware 5
+        run: |
+          curl -XPOST -H "PRIVATE-TOKEN: ${{ secrets.GITLAB_TOKEN }}" "https://gitlab.marmalade.de/api/v4/projects/${{ secrets.GITLAB_PROJECT_ID }}/pipeline?ref=stage"
   release:
     name: Create a new release
-    needs: test
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/stable'
     steps:
       - name: Clone code repo
         uses: actions/checkout@v2
