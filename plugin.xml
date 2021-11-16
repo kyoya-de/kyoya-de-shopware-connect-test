@@ -2,7 +2,7 @@
 <plugin xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="../../../vendor/shopware/shopware/engine/Shopware/Components/Plugin/schema/plugin.xsd">
     <label>Makaira :: Connect</label>
-    <version>0.2.0</version>
+    <version>1.0.0</version>
     <copyright>marmalade GmbH</copyright>
     <license>MIT</license>
     <link>http://www.marmalade.de/</link>

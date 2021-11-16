@@ -1,3 +1,15 @@
+# [1.0.0](https://github.com/MakairaIO/shopware-connect/compare/0.2.0...1.0.0) (2021-11-16)
+
+
+### Features
+
+* Initial release ([3b3b348](https://github.com/MakairaIO/shopware-connect/commit/3b3b34882e0452a2858815bb191814f0de3d8629))
+
+
+### BREAKING CHANGES
+
+* First released version
+
 # [0.2.0](https://github.com/MakairaIO/shopware-connect/compare/v0.1.0...0.2.0) (2021-11-16)
 
 
