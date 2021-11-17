@@ -22,7 +22,7 @@ use const JSON_PRETTY_PRINT;
 
 class Api implements ApiInterface
 {
-    const MAKAIRA_EXPERIMENT_SESSION_NAME = 'makairaExperiments';
+    const MAKAIRA_EXPERIMENT_COOKIE_NAME = 'makairaExperiments';
     /**
      * @var HttpClient
      */
@@ -64,12 +64,10 @@ class Api implements ApiInterface
 
     private function callApi($method, $url, $body, $headers): HttpClient\Response
     {
-        $session = $this->requestStack->getCurrentRequest()->getSession();
-
         // Get experiment from session and send to Makaira if exists
-        $makairaExperiments = $session->get(self::MAKAIRA_EXPERIMENT_SESSION_NAME);
+        $makairaExperiments = Shopware()->Front()->Request()->getCookie(self::MAKAIRA_EXPERIMENT_COOKIE_NAME);
         if ($makairaExperiments !== null && $body instanceof AbstractQuery) {
-            $body->setConstraint(Constraints::AB_EXPERIMENTS, $makairaExperiments);
+            $body->setConstraint(Constraints::AB_EXPERIMENTS, json_decode($makairaExperiments, true));
         }
 
         // Send request to Makaira
@@ -78,9 +76,9 @@ class Api implements ApiInterface
         // Store experiments into session
         $body = json_decode($response->body, true);
         if (isset($body['experiments'])) {
-            $session->set(self::MAKAIRA_EXPERIMENT_SESSION_NAME, $body['experiments']);
+            Shopware()->Front()->Response()->setCookie(self::MAKAIRA_EXPERIMENT_COOKIE_NAME, json_encode($body['experiments']));
         } else {
-            $session->remove(self::MAKAIRA_EXPERIMENT_SESSION_NAME);
+            Shopware()->Front()->Response()->removeCookie(self::MAKAIRA_EXPERIMENT_COOKIE_NAME);
         }
 
         return $response;
