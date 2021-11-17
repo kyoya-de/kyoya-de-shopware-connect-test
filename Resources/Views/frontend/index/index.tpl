@@ -83,6 +83,29 @@
                 ]);
             {/if}
 
+            window.addEventListener('load', function () {
+                const ele = document.getElementsByName('sAddToBasket');
+                ele[0].addEventListener("submit", function () {
+                    const quantitySelect = document.getElementById('sQuantity');
+                    _paq.push([
+                        "addEcommerceItem",
+                        '{$sArticle.ordernumber|escape:'javascript'}',
+                        '{$sArticle.articleName|escape:'javascript'}',
+                        '',
+                        '{$sArticle.price_numeric|round:2}',
+                        quantitySelect.value
+                    ]);
+
+                    const xmlHttp = new XMLHttpRequest();
+                    xmlHttp.open("GET", '{url controller=checkout action=ajaxAmount}', false);
+                    xmlHttp.send(null);
+                    const response = JSON.parse(xmlHttp.response);
+                    let cartTotal = response.amount;
+                    cartTotal = cartTotal.match(/[+-]?\d+(\.\d+)?/g)[0];
+                    _paq.push(["trackEcommerceCartUpdate", cartTotal]);
+                }, false);
+            });
+
             (function() {
                 var u="https://piwik.makaira.io/";
                 _paq.push(['setTrackerUrl', u+'piwik.php']);
