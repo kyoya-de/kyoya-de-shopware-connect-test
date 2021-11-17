@@ -61,7 +61,6 @@
             <argument type="service" id="makaira.http_client"/>
             <argument type="expression">service('shopware.plugin.config_reader').getByPluginName(parameter('makaira_connect.plugin_name'))</argument>
             <argument type="expression">parameter('active_plugins')[parameter('makaira_connect.plugin_name')]</argument>
-            <argument type="service" id="request_stack"/>
         </service>
 
         <service id="makaira_connect.command.search" class="MakairaConnect\Command\SearchCommand">
