@@ -11,7 +11,6 @@ use Makaira\HttpClient;
 use Makaira\Query;
 use Makaira\Result;
 use Makaira\ResultItem;
-use Symfony\Component\HttpFoundation\RequestStack;
 use function compact;
 use function explode;
 use function htmlspecialchars_decode;
@@ -43,23 +42,19 @@ class Api implements ApiInterface
      */
     private $defaultHeaders;
 
-    private RequestStack $requestStack;
-
     /**
      * Api constructor.
      *
      * @param HttpClient $httpClient
      * @param array $config
      * @param string $pluginVersion
-     * @param RequestStack $requestStack
      */
-    public function __construct(HttpClient $httpClient, array $config, string $pluginVersion, RequestStack $requestStack)
+    public function __construct(HttpClient $httpClient, array $config, string $pluginVersion)
     {
         $this->baseUrl        = rtrim($config['makaira_application_url'], '/');
         $this->httpClient     = $httpClient;
         $this->pluginVersion  = $pluginVersion;
         $this->defaultHeaders = ["X-Makaira-Instance: {$config['makaira_instance']}"];
-        $this->requestStack   = $requestStack;
     }
 
     private function callApi($method, $url, $body, $headers): HttpClient\Response
