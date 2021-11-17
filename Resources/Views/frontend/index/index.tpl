@@ -95,14 +95,6 @@
                         '{$sArticle.price_numeric|round:2}',
                         quantitySelect.value
                     ]);
-
-                    const xmlHttp = new XMLHttpRequest();
-                    xmlHttp.open("GET", '{url controller=checkout action=ajaxAmount}', false);
-                    xmlHttp.send(null);
-                    const response = JSON.parse(xmlHttp.response);
-                    let cartTotal = response.amount;
-                    cartTotal = cartTotal.match(/[+-]?\d+(\.\d+)?/g)[0];
-                    _paq.push(["trackEcommerceCartUpdate", cartTotal]);
                 }, false);
             });
 
