@@ -91,7 +91,7 @@
                         "addEcommerceItem",
                         '{$sArticle.ordernumber|escape:'javascript'}',
                         '{$sArticle.articleName|escape:'javascript'}',
-                        '',
+                        '{$sArticle.categoryID}',
                         '{$sArticle.price_numeric|round:2}',
                         quantitySelect.value
                     ]);
