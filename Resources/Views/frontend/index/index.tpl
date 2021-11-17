@@ -83,6 +83,7 @@
                 ]);
             {/if}
 
+            {* ADD TO CART *}
             window.addEventListener('load', function () {
                 const ele = document.getElementsByName('sAddToBasket');
                 ele[0].addEventListener("submit", function () {
@@ -98,6 +99,7 @@
                 }, false);
             });
 
+            {* A/B EXPERIMENTS *}
             function getCookie(cname) {
                 let name = cname + "=";
                 let decodedCookie = decodeURIComponent(document.cookie);
@@ -113,7 +115,6 @@
                 }
                 return "";
             }
-
             const experiments = JSON.parse(getCookie('makairaExperiments'));
             for (let i = 0; i < experiments.length; i++) {
                 _paq.push(['trackEvent', 'abtesting', experiments[i].experiment, experiments[i].variation]);
