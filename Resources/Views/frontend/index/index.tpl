@@ -123,9 +123,13 @@
                 }
                 return "";
             }
-            const experiments = JSON.parse(getCookie('makairaExperiments'));
-            for (let i = 0; i < experiments.length; i++) {
-                _paq.push(['trackEvent', 'abtesting', experiments[i].experiment, experiments[i].variation]);
+
+            const makairaExperiments = getCookie('makairaExperiments');
+            if (makairaExperiments !== "") {
+                const experiments = JSON.parse(makairaExperiments);
+                for (let i = 0; i < experiments.length; i++) {
+                    _paq.push(['trackEvent', 'abtesting', experiments[i].experiment, experiments[i].variation]);
+                }
             }
 
             (function() {
