@@ -1,0 +1,23 @@
+{
+  "branches": ["stable"],
+  "tagFormat": "${version}",
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/changelog",
+    "@semantic-release/github",
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "sed -i -E \"s@(<version>)[^<]+(</version>)@\\1${nextRelease.version}\\2@\" plugin.xml"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["CHANGELOG.md", "plugin.xml"],
+        "message": "chore(release): ${nextRelease.version} [skip ci] \n\n${nextRelease.notes}"
+      }
+    ]
+  ]
+}
