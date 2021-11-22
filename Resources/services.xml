@@ -136,9 +136,11 @@
             <argument type="service" id="models"/>
         </service>
 
+<!--
         <service id="MakairaConnect\Subscriber\FilterSEOUrls">
             <tag name="router.matcher" priority="1025" />
             <tag name="shopware.event_subscriber" />
         </service>
+-->
     </services>
 </container>
