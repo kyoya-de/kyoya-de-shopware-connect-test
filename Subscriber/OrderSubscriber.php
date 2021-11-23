@@ -50,6 +50,7 @@ class OrderSubscriber implements SubscriberInterface
      */
     public function onOrderCreated(Enlight_Event_EventArgs $eventArgs)
     {
+        // Create doctrine query to fetch the ordernumber of the main product details (also known as "parent").
         $qb = $this->db->createQueryBuilder();
         $qb->select('ad.ordernumber')
             ->from('s_articles', 'a')
@@ -60,9 +61,11 @@ class OrderSubscriber implements SubscriberInterface
                     $qb->expr()->eq('a.id', ':articleID')
                 )
             );
-        /** @var sOrder $entity */
-        $entity = $eventArgs->get('subject');
-        foreach ($entity->sBasketData['content'] as $basketProduct) {
+
+        /** @var sOrder $order */
+        $order = $eventArgs->get('subject');
+        foreach ($order->sBasketData['content'] as $basketProduct) {
+            // Skip virtual products like discounts.
             if (0 < $basketProduct['articleID']) {
                 $this->revisionRepository->addRevision('variant', $basketProduct['ordernumber']);
                 $qb->setParameter('articleID', $basketProduct['articleID']);
