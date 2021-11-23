@@ -2,11 +2,13 @@
 
 namespace MakairaConnect\Subscriber;
 
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM;
 use Enlight\Event\SubscriberInterface;
 use Enlight_Event_EventArgs;
 use MakairaConnect\Repositories\MakRevisionRepository;
-use Shopware_Proxies_sOrderProxy;
+use sOrder;
+use function Doctrine\DBAL\Query\QueryBuilder;
 
 class OrderSubscriber implements SubscriberInterface
 {
@@ -16,11 +18,18 @@ class OrderSubscriber implements SubscriberInterface
     private $revisionRepository;
 
     /**
-     * @param MakRevisionRepository $revisionRepository
+     * @var Connection
      */
-    public function __construct(MakRevisionRepository $revisionRepository)
+    private $db;
+
+    /**
+     * @param MakRevisionRepository $revisionRepository
+     * @param Connection            $db
+     */
+    public function __construct(MakRevisionRepository $revisionRepository, Connection $db)
     {
         $this->revisionRepository = $revisionRepository;
+        $this->db                 = $db;
     }
 
     /**
@@ -41,11 +50,25 @@ class OrderSubscriber implements SubscriberInterface
      */
     public function onOrderCreated(Enlight_Event_EventArgs $eventArgs)
     {
-        /** @var Shopware_Proxies_sOrderProxy $entity */
+        $qb = $this->db->createQueryBuilder();
+        $qb->select('ad.ordernumber')
+            ->from('s_articles', 'a')
+            ->from('s_articles_details', 'ad')
+            ->where(
+                $qb->expr()->andX(
+                    $qb->expr()->eq('ad.id', 'a.main_detail_id'),
+                    $qb->expr()->eq('a.id', ':articleID')
+                )
+            );
+        /** @var sOrder $entity */
         $entity = $eventArgs->get('subject');
         foreach ($entity->sBasketData['content'] as $basketProduct) {
-            $this->revisionRepository->addRevision('variant', $basketProduct['ordernumber']);
-            $this->revisionRepository->addRevision('product', $basketProduct['ordernumber']);
+            if (0 < $basketProduct['articleID']) {
+                $this->revisionRepository->addRevision('variant', $basketProduct['ordernumber']);
+                $qb->setParameter('articleID', $basketProduct['articleID']);
+                $productOrderNo = $qb->execute()->fetchColumn();
+                $this->revisionRepository->addRevision('product', $productOrderNo);
+            }
         }
     }
 }

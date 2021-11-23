@@ -135,6 +135,7 @@
 
         <service id="MakairaConnect\Subscriber\OrderSubscriber">
             <argument key="$revisionRepository" type="expression">service('models').getRepository('MakairaConnect\\Models\\MakRevision')</argument>
+            <argument key="$db" type="service" id="dbal_connection"/>
             <tag name="shopware.event_subscriber" />
         </service>
     </services>
