@@ -407,7 +407,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         /** @var Mapper\EntityMapper $mapper */
         $mapper = $this->get('makaira_connect.mapper');
 
-        [
+        $changes = [
             array_map(
                 function (Product $product) use ($revisions, $mapper) {
                     return $this->buildChangesHead(
