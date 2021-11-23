@@ -1,3 +1,15 @@
+# [1.3.0](https://github.com/MakairaIO/shopware-connect/compare/1.2.0...1.3.0) (2021-11-23)
+
+
+### Bug Fixes
+
+* Add missing variable assignment ([67d7ebd](https://github.com/MakairaIO/shopware-connect/commit/67d7ebd69a1e99210925ca1650c24df607f856a4))
+
+
+### Features
+
+* Product attribute import ([5d9d6db](https://github.com/MakairaIO/shopware-connect/commit/5d9d6dbb17e3c8afe9ff9f556e6184a3de53b04c))
+
 # [1.2.0](https://github.com/MakairaIO/shopware-connect/compare/1.1.0...1.2.0) (2021-11-23)
 
 
