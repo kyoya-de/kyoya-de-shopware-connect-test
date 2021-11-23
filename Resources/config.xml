@@ -14,14 +14,6 @@
             <label lang="en">Makaira Url</label>
         </element>
 
-        <element required="false" type="text" scope="locale">
-            <name>makaira_connect_load_limit</name>
-            <label lang="de">Last Limitierung</label>
-            <label lang="en">Load Limitation</label>
-            <description lang="de">Üblicher Wert: Hälfte der Anzahl der CPU-Kerne auf dieser Maschine (1 CPU-Kern => .5; 4 CPU-Kerne => 2)</description>
-            <description lang="en">Common value: Half of the number of CPU cores on this machine (1 core => .5; 4 cores => 2)</description>
-        </element>
-
         <element required="true" type="select" scope="locale">
             <name>makaira_instance</name>
             <label lang="de">Makaira Instanz</label>
@@ -64,48 +56,6 @@
             <label lang="en">Parent Category stores all products of all subcategories</label>
         </element>
 
-        <element required="false" type="text" scope="locale">
-            <name>makaira_subcategory_id</name>
-            <label lang="de">ID des Kategorie-Baum-Filters (falls vorhanden)</label>
-            <label lang="en">ID of the Category-Tree-Filter (if existing)</label>
-        </element>
-
-        <element type="boolean">
-            <name>makaira_seo_urls</name>
-            <label lang="de">SEO-Urls für gefilterte Kategorie- und Herstellerseiten erzeugen</label>
-            <label lang="en">Generate SEO-Urls for filtered Category- and Manufacturer sites</label>
-        </element>
-
-        <element type="boolean">
-            <name>makaira_user_timezone</name>
-            <label lang="de">User-Zeitzone übermitteln</label>
-            <label lang="en">Submit user-timezone</label>
-        </element>
-
-        <element type="boolean">
-            <name>makaira_user_ip</name>
-            <label lang="de">Zusätzlich User-IP übermitteln für Geolocation (ich habe einen AV Vertrag mit der marmalade GmbH geschlossen.)</label>
-            <label lang="en">Additionally submit user-ip for Geolocation (I have an AV contract with the marmalade GmbH.)</label>
-        </element>
-
-        <element required="false" type="textarea" scope="locale">
-            <name>makaira_field_blacklist_product</name>
-            <label lang="de"><![CDATA[<b>Produkte</b>: ausgeschlossene Felder]]></label>
-            <label lang="en"><![CDATA[<b>Products</b>: blacklisted fields]]></label>
-        </element>
-
-        <element required="false" type="textarea" scope="locale">
-            <name>makaira_field_blacklist_category</name>
-            <label lang="de"><![CDATA[<b>Kategorie</b>: ausgeschlossene Felder]]></label>
-            <label lang="en"><![CDATA[<b>Category</b>: blacklisted fields]]></label>
-        </element>
-
-        <element required="false" type="textarea" scope="locale">
-            <name>makaira_field_blacklist_manufacturer</name>
-            <label lang="de"><![CDATA[<b>Hersteller</b>: ausgeschlossene Felder]]></label>
-            <label lang="en"><![CDATA[<b>Manufacturer</b>: blacklisted fields]]></label>
-        </element>
-
         <element type="boolean">
             <name>makaira_recommendations_active</name>
             <label lang="de">Empfehlungen aktivieren</label>
@@ -116,6 +66,29 @@
             <name>makaira_recommendations_identifier</name>
             <label lang="de">Empfehlungs Identifikator</label>
             <label lang="en">Recommendation Identifier</label>
+        </element>
+
+        <element type="button">
+            <name>makaira_update_filter</name>
+            <label lang="de">Filter synchronisieren</label>
+            <label lang="en">Synchronize filter</label>
+            <options>
+                <handler>
+                    <![CDATA[
+                    function() {
+                        Ext.Ajax.request({
+                            url: 'MakairaConnectConfigurationAction/updateFilters',
+                            success: function (response) {
+                                Shopware.Msg.createGrowlMessage(response.statusText, response.responseText);
+                            },
+                            failure: function (response) {
+                                Shopware.Msg.createGrowlMessage(response.statusText, response.responseText)
+                            }
+                        });
+                    }
+                    ]]>
+                </handler>
+            </options>
         </element>
     </elements>
 </config>

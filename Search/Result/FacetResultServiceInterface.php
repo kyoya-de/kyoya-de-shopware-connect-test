@@ -4,7 +4,7 @@ namespace MakairaConnect\Search\Result;
 
 use Makaira\Result;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 
 interface FacetResultServiceInterface
 {
@@ -12,12 +12,12 @@ interface FacetResultServiceInterface
      * @param array                   $facets
      * @param Result                  $result
      * @param Criteria                $criteria
-     * @param ProductContextInterface $context
+     * @param ShopContextInterface $context
      */
     public function parseFacets(
         array &$facets,
         Result $result,
         Criteria $criteria,
-        ProductContextInterface $context
+        ShopContextInterface $context
     ): void;
 }

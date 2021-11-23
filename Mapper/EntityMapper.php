@@ -259,8 +259,19 @@ class EntityMapper
         $categories    = $product->getCategories();
         $categorySort  = [];
         $allCategories = array_map(
-            function (CategoryStruct $category) use ($context, &$categorySort) {
-                $categorySort["cat_{$category->getId()}"] = $category->getPosition();
+            function (CategoryStruct $category) use ($context, $product, &$categorySort) {
+                // todo: check if there is a smarter way to get the position from s_categories_manual_sorting
+                $categoryObject = $this->em->find(Category::class, $category->getId());
+                $manualSorting  = $categoryObject->getManualSorting();
+                // if no position is set, take a high value to guarantee that these will be displayed under the positioned ones
+                $position = 999;
+                foreach ($manualSorting as $sorting) {
+                    if ($product->getId() === $sorting->getProduct()->getId()) {
+                        $position = $sorting->getPosition();
+                        break;
+                    }
+                }
+                $categorySort["cat_{$category->getId()}"] = $position;
 
                 return [
                     'catid'  => (string) $category->getId(),
@@ -295,8 +306,14 @@ class EntityMapper
             $price = ($product->getCheapestPrice() ?? $product->getVariantPrice())->getCalculatedPrice();
         }
 
-        if (null !== ($releaseDate = $product->getReleaseDate())) {
-            $releaseDate = $releaseDate->format(DateTimeInterface::ATOM);
+        $releaseDate = '0001-01-01T00:00:00';
+        if (null !== ($releaseDateObject = $product->getReleaseDate())) {
+            $releaseDate = $releaseDateObject->format(DateTimeInterface::ATOM);
+        }
+
+        $creationDate = '0001-01-01T00:00:00';
+        if (null !== ($creationDateObject = $product->getCreatedAt())) {
+            $creationDate = $creationDateObject->format(DateTimeInterface::ATOM);
         }
 
         $manufacturerTitle = '';
@@ -355,6 +372,7 @@ class EntityMapper
                 'manufacturerid'     => (string) ($makManufacturer['id'] ?? ''),
                 'manufacturer_title' => $manufacturerTitle,
                 'sw_manufacturer'    => $makManufacturer,
+                'creationDate'       => (string) $creationDate,
             ],
         ];
 
