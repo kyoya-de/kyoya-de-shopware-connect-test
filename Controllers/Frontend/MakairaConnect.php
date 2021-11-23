@@ -398,7 +398,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
 
         $loadedIds = $this->extractIds(
             $products,
-            static function ($entity) {
+            static function (Product $entity) {
                 return $entity->getNumber();
             }
         );
