@@ -11,19 +11,19 @@ use MakairaConnect\Client\ApiInterface;
 use MakairaConnect\Search\Condition\ConditionParserInterface;
 use MakairaConnect\Search\Result\FacetResultServiceInterface;
 use MakairaConnect\Search\Sorting\SortingParserInterface;
+use Psr\Log\LoggerInterface;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\SearchBundle\ProductSearchInterface;
-use Shopware\Bundle\SearchBundle\ProductSearchResult;
 use Shopware\Bundle\StoreFrontBundle\Service\ListProductServiceInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use Shopware\Components\Model\QueryBuilder;
-use Shopware\Models\Article\Supplier;
 use Shopware\Models\Category\Category;
+use Throwable;
 use Traversable;
 use function array_map;
+use function get_class;
 use function reset;
 
-class SearchService implements ProductSearchInterface
+class SearchService
 {
     /**
      * @var array
@@ -34,11 +34,6 @@ class SearchService implements ProductSearchInterface
      * @var ApiInterface
      */
     private $api;
-
-    /**
-     * @var ProductSearchInterface
-     */
-    private $innerService;
 
     /**
      * @var ListProductServiceInterface
@@ -66,144 +61,79 @@ class SearchService implements ProductSearchInterface
     private $sortingParser;
     
     /**
-     * @var searchResult
+     * @var array
      */
-    private $completeResult = null;
+    private $completeResult = [];
+
+    /**
+     * @var LoggerInterface
+     */
+    private $logger;
 
     /**
      * SearchService constructor.
      *
      * @param array                       $config
-     * @param ProductSearchInterface      $innerService
      * @param ApiInterface                $makairaApi
      * @param ListProductServiceInterface $productService
+     * @param EntityManagerInterface      $entityManager
      * @param Traversable                 $facetResultServices
      * @param Traversable                 $conditionParser
      * @param Traversable                 $sortingParser
+     * @param LoggerInterface             $logger
      */
     public function __construct(
         array $config,
-        ProductSearchInterface $innerService,
         ApiInterface $makairaApi,
         ListProductServiceInterface $productService,
         EntityManagerInterface $entityManager,
         Traversable $facetResultServices,
         Traversable $conditionParser,
-        Traversable $sortingParser
+        Traversable $sortingParser,
+        LoggerInterface $logger
     ) {
         $this->config              = $config;
-        $this->innerService        = $innerService;
         $this->api                 = $makairaApi;
         $this->productService      = $productService;
         $this->facetResultServices = $facetResultServices;
         $this->conditionParser     = $conditionParser;
         $this->sortingParser       = $sortingParser;
         $this->em                  = $entityManager;
+        $this->logger              = $logger;
     }
 
     /**
-     * @param Criteria                $criteria
-     * @param ProductContextInterface $context
+     * @param Criteria             $criteria
+     * @param ShopContextInterface $context
      *
-     * @return ProductSearchResult
+     * @return array|false
      */
-    public function search(Criteria $criteria, ProductContextInterface $context)
+    public function search(Criteria $criteria, ShopContextInterface $context)
     {
         if (!$this->isMakairaActive($criteria)) {
-            return $this->innerService->search($criteria, $context);
+            return false;
         }
 
-        $query              = new Query();
-        $query->fields      = ['id', 'ean', 'makaira-product'];
-        $query->constraints = [
-            Constraints::SHOP     => $context->getShop()->getId(),
-            Constraints::LANGUAGE => $context->getShop()->getLocale()->getLocale(),
-        ];
-        $query->offset      = $criteria->getOffset();
-        $query->count       = $criteria->getLimit();
-        $query->isSearch    = $criteria->hasBaseCondition('search');
-        $query->sorting     = $this->mapSorting($criteria, $context);
-
-        if ($criteria->hasBaseCondition('search')) {
-            $searchCondition     = $criteria->getBaseCondition('search');
-            $query->searchPhrase = $searchCondition->getTerm();
+        try {
+            return $this->doSearch($context, $criteria);
+        } catch (Throwable $t) {
+            do {
+                $this->logger->error(
+                    "Makaira search failed: {$t->getMessage()}",
+                    [
+                        'class'   => get_class($t),
+                        'message' => $t->getMessage(),
+                        'code'    => $t->getCode(),
+                        'file'    => $t->getFile(),
+                        'line'    => $t->getLine(),
+                        'trace'   => $t->getTraceAsString(),
+                    ]
+                );
+                $t = $t->getPrevious();
+            } while (null !== $t);
         }
 
-        if ($criteria->hasBaseCondition('category')) {
-            $categoryCondition = $criteria->getBaseCondition('category');
-            $categoryIds       = $categoryCondition->getCategoryIds();
-
-            if ($this->config['makaira_subcategory_products']) {
-                $categoryId    = reset($categoryIds);
-                $categoryIds   = $this->getSubCategoryIds($categoryId);
-                $categoryIds[] = $categoryId;
-            }
-
-            $query->constraints[Constraints::CATEGORY] = array_map(
-                static function ($categoryId) {
-                    return (string) $categoryId;
-                },
-                $categoryIds
-            );
-        }
-
-        if ($criteria->hasBaseCondition('manufacturer')) {
-            $ManufacturerCondition                         = $criteria->getBaseCondition('manufacturer');
-            $manufacturerIds                               = $ManufacturerCondition->getManufacturerIds();
-            $query->constraints[Constraints::MANUFACTURER] = reset($manufacturerIds);
-        }
-
-        $this->mapConditions($criteria, $query, $context);
-
-        $result = $this->api->search($query, $criteria->hasCondition('makaira_debug') ? 'true' : '');
-
-        $this->completeResult = $result;
-        
-        // get manufacturer results
-        $manufacturers = [];
-        if ($this->completeResult['manufacturer']) {
-            foreach ($this->completeResult['manufacturer']->items as $document) {
-                $manufacturers[] = $this->prepareManufacturerItem($document);
-            }
-        }
-        // filter out empty values
-        $manufacturers = array_filter($manufacturers);
-        $this->completeResult['manufacturer'] = $manufacturers;
-        
-        // get category results
-        $categories = [];
-        if ($result['category']) {
-            foreach ($result['category']->items as $document) {
-                $categories[] = $this->prepareCategoryItem($document);
-            }
-        }
-        // filter out empty values
-        $categories = array_filter($categories);
-        $this->completeResult['category'] = $categories;
-        
-        
-        // get searchable links results
-        $links = [];
-        if ($result['links']) {
-            foreach ($result['links']->items as $document) {
-                $links[] = $this->prepareLinkItem($document);
-            }
-        }
-        // filter out empty values
-        $links = array_filter($links);
-        $this->completeResult['links'] = $links;
-        
-        $numbers  = array_map(
-            static function (ResultItem $item) {
-                return $item->fields['ean'];
-            },
-            $result['product']->items
-        );
-        $products = $this->productService->getList($numbers, $context);
-
-        $facets = $this->mapFacets($result['product'], $criteria, $context);
-
-        return new ProductSearchResult($products, $result['product']->total, $facets, $criteria, $context);
+        return false;
     }
 
     /**
@@ -228,11 +158,11 @@ class SearchService implements ProductSearchInterface
 
     /**
      * @param Criteria                $criteria
-     * @param ProductContextInterface $context
+     * @param ShopContextInterface $context
      *
      * @return array
      */
-    private function mapSorting(Criteria $criteria, ProductContextInterface $context): array
+    private function mapSorting(Criteria $criteria, ShopContextInterface $context): array
     {
         $sort = [];
 
@@ -248,9 +178,9 @@ class SearchService implements ProductSearchInterface
     /**
      * @param Criteria                $criteria
      * @param Query                   $query
-     * @param ProductContextInterface $context
+     * @param ShopContextInterface $context
      */
-    protected function mapConditions(Criteria $criteria, Query $query, ProductContextInterface $context): void
+    protected function mapConditions(Criteria $criteria, Query $query, ShopContextInterface $context): void
     {
         foreach ($criteria->getConditions() as $condition) {
             foreach ($this->conditionParser as $conditionParser) {
@@ -262,11 +192,11 @@ class SearchService implements ProductSearchInterface
     /**
      * @param Result                  $product
      * @param Criteria                $criteria
-     * @param ProductContextInterface $context
+     * @param ShopContextInterface $context
      *
      * @return array
      */
-    protected function mapFacets(Result $product, Criteria $criteria, ProductContextInterface $context): array
+    protected function mapFacets(Result $product, Criteria $criteria, ShopContextInterface $context): array
     {
         $facets = [];
 
@@ -357,5 +287,106 @@ class SearchService implements ProductSearchInterface
             },
             array_column($query->getScalarResult(), 'id')
         );
+    }
+
+    /**
+     * @param ShopContextInterface $context
+     * @param Criteria             $criteria
+     *
+     * @return array
+     */
+    private function doSearch(ShopContextInterface $context, Criteria $criteria): array
+    {
+        $query              = new Query();
+        $query->fields      = ['id', 'ean', 'makaira-product'];
+        $query->constraints = [
+            Constraints::SHOP     => $context->getShop()->getId(),
+            Constraints::LANGUAGE => $context->getShop()->getLocale()->getLocale(),
+        ];
+        $query->offset      = $criteria->getOffset();
+        $query->count       = $criteria->getLimit();
+        $query->isSearch    = $criteria->hasBaseCondition('search');
+        $query->sorting     = $this->mapSorting($criteria, $context);
+
+        if ($criteria->hasBaseCondition('search')) {
+            $searchCondition     = $criteria->getBaseCondition('search');
+            $query->searchPhrase = $searchCondition->getTerm();
+        }
+
+        if ($criteria->hasBaseCondition('category')) {
+            $categoryCondition = $criteria->getBaseCondition('category');
+            $categoryIds       = $categoryCondition->getCategoryIds();
+
+            if ($this->config['makaira_subcategory_products']) {
+                $categoryId    = reset($categoryIds);
+                $categoryIds   = $this->getSubCategoryIds($categoryId);
+                $categoryIds[] = $categoryId;
+            }
+
+            $query->constraints[Constraints::CATEGORY] = array_map(
+                static function ($categoryId) {
+                    return (string) $categoryId;
+                },
+                $categoryIds
+            );
+        }
+
+        if ($criteria->hasBaseCondition('manufacturer')) {
+            $ManufacturerCondition                         = $criteria->getBaseCondition('manufacturer');
+            $manufacturerIds                               = $ManufacturerCondition->getManufacturerIds();
+            $query->constraints[Constraints::MANUFACTURER] = reset($manufacturerIds);
+        }
+
+        $this->mapConditions($criteria, $query, $context);
+
+        $result = $this->api->search($query, $criteria->hasCondition('makaira_debug') ? 'true' : '');
+
+        $this->completeResult = $result;
+
+        // get manufacturer results
+        $manufacturers = [];
+        if ($this->completeResult['manufacturer']) {
+            foreach ($this->completeResult['manufacturer']->items as $document) {
+                $manufacturers[] = $this->prepareManufacturerItem($document);
+            }
+        }
+        // filter out empty values
+        $manufacturers                        = array_filter($manufacturers);
+        $this->completeResult['manufacturer'] = $manufacturers;
+
+        // get category results
+        $categories = [];
+        if ($result['category']) {
+            foreach ($result['category']->items as $document) {
+                $categories[] = $this->prepareCategoryItem($document);
+            }
+        }
+        // filter out empty values
+        $categories                       = array_filter($categories);
+        $this->completeResult['category'] = $categories;
+
+
+        // get searchable links results
+        $links = [];
+        if ($result['links']) {
+            foreach ($result['links']->items as $document) {
+                $links[] = $this->prepareLinkItem($document);
+            }
+        }
+        // filter out empty values
+        $links                         = array_filter($links);
+        $this->completeResult['links'] = $links;
+
+        $numbers  = array_map(
+            static function (ResultItem $item) {
+                return $item->fields['ean'];
+            },
+            $result['product']->items
+        );
+        $products = $this->productService->getList($numbers, $context);
+
+        $facets = $this->mapFacets($result['product'], $criteria, $context);
+
+        return [$products, $result, $facets];
     }
 }

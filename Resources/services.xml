@@ -32,6 +32,7 @@
         </service>
 
         <service id="makaira_connect.subscriber.event.shopware" class="MakairaConnect\Subscriber\ShopwareSubscriber">
+            <argument key="$productSearch" type="service" id="MakairaConnect\Service\SearchService" />
             <tag name="shopware.event_subscriber" />
         </service>
 
@@ -62,10 +63,13 @@
         </service>
 
         <service id="MakairaConnect\Command\TouchAllCommand">
-            <tag name="console.command" />
+            <tag name="console.command" command="makaira:touch-all" />
         </service>
 
-        <service id="makaira.http_client.curl" class="Makaira\HttpClient\Curl"/>
+        <service id="makaira.http_client.curl" class="Makaira\HttpClient\Curl">
+            <argument key="$timeout">10</argument>
+            <argument key="$connectTimeout">2</argument>
+        </service>
 
         <service id="makaira.http_client" class="Makaira\HttpClient\Signing" decorates="makaira.http_client.curl">
             <argument type="service" id="makaira.http_client.inner"/>
@@ -80,27 +84,41 @@
 
         <service id="makaira_connect.command.search" class="MakairaConnect\Command\SearchCommand">
             <argument type="service" id="makaira.api"/>
-            <tag name="console.command" />
+            <tag name="console.command" command="makaira:search" />
         </service>
 
         <service id="makaira_connect.command.filter_update" class="MakairaConnect\Command\FilterUpdateCommand">
             <argument type="service" id="MakairaConnect\Service\UpdateFilters"/>
-            <tag name="console.command" />
+            <tag name="console.command" command="makaira:filter:update" />
         </service>
 
         <service
-            id="makaira_search.product_search"
-            class="MakairaConnect\Service\SearchService"
-            decorates="shopware_search.product_search"
-            decoration-priority="10000">
+                id="makaira_search.product_number_search"
+                class="MakairaConnect\Search\ProductNumberSearch"
+                decorates="shopware_search.product_number_search"
+                decoration-priority="10000">
+            <argument type="service" id="MakairaConnect\Service\SearchService" />
+            <argument type="service" id="makaira_search.product_number_search.inner" />
+        </service>
+
+        <service
+                id="makaira_search.product_search"
+                class="MakairaConnect\Search\ProductSearch"
+                decorates="shopware_search.product_search"
+                decoration-priority="10000">
+            <argument type="service" id="MakairaConnect\Service\SearchService" />
+            <argument type="service" id="makaira_search.product_search.inner" />
+        </service>
+
+        <service id="MakairaConnect\Service\SearchService">
             <argument type="expression">service('shopware.plugin.config_reader').getByPluginName(parameter('makaira_connect.plugin_name'))</argument>
-            <argument type="service" id="makaira_search.product_search.inner"/>
             <argument type="service" id="makaira.api" />
             <argument type="service" id="shopware_storefront.list_product_service"/>
             <argument type="service" id="models"/>
             <argument type="tagged" tag="makaira_connect.result_facet_service"/>
             <argument type="tagged" tag="makaira_connect.condition_parser"/>
             <argument type="tagged" tag="makaira_connect.sorting_parser"/>
+            <argument type="service" id="makaira_connect.logger" />
         </service>
 
         <service id="MakairaConnect\Search\Result\FacetResultService">
@@ -138,5 +156,12 @@
             <argument key="$db" type="service" id="dbal_connection"/>
             <tag name="shopware.event_subscriber" />
         </service>
+
+<!--
+      <service id="MakairaConnect\Subscriber\FilterSEOUrls">
+            <tag name="router.matcher" priority="1025" />
+            <tag name="shopware.event_subscriber" />
+        </service>
+-->
     </services>
 </container>
