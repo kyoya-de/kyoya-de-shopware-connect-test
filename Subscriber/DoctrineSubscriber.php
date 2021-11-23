@@ -96,7 +96,13 @@ class DoctrineSubscriber implements EventSubscriber
      */
     private function checkInstance($entity)
     {
-        return self::INSTANCES[get_class($entity)] ?? false;
+        foreach (self::INSTANCES as $entityClass => $type) {
+            if ($entity instanceof $entityClass) {
+                return $type;
+            }
+        }
+
+        return false;
     }
 
     /**
