@@ -6,22 +6,22 @@ use Shopware\Bundle\SearchBundle\Condition\CategoryCondition;
 use Shopware\Bundle\SearchBundle\Criteria;
 use Shopware\Bundle\SearchBundle\Sorting;
 use Shopware\Bundle\SearchBundle\SortingInterface;
-use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use function reset;
 
 class SortingParser implements SortingParserInterface
 {
     /**
-     * @param array                   $sortResult
-     * @param SortingInterface        $sorting
-     * @param Criteria                $criteria
-     * @param ProductContextInterface $context
+     * @param array                $sortResult
+     * @param SortingInterface     $sorting
+     * @param Criteria             $criteria
+     * @param ShopContextInterface $context
      */
     public function parseSorting(
         array &$sortResult,
         SortingInterface $sorting,
         Criteria $criteria,
-        ProductContextInterface $context
+        ShopContextInterface $context
     ): void {
         $name = false;
 
@@ -59,7 +59,7 @@ class SortingParser implements SortingParserInterface
         }
 
         if (false !== $name) {
-            $sort[$name] = $sorting->getDirection();
+            $sortResult[$name] = $sorting->getDirection();
         }
     }
 }
