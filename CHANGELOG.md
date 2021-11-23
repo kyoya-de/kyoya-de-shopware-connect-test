@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/MakairaIO/shopware-connect/compare/1.3.0...1.4.0) (2021-11-23)
+
+
+### Features
+
+* Recommendations on product detail page ([bc88793](https://github.com/MakairaIO/shopware-connect/commit/bc887937867499fdf93484f824baf9e297e50d95))
+
 # [1.3.0](https://github.com/MakairaIO/shopware-connect/compare/1.2.0...1.3.0) (2021-11-23)
 
 
