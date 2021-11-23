@@ -12,7 +12,7 @@ use MakairaConnect\Modifier\CategoryModifierInterface;
 use MakairaConnect\Modifier\ManufacturerModifierInterface;
 use MakairaConnect\Modifier\ProductModifierInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\Category as CategoryStruct;
-use Shopware\Bundle\StoreFrontBundle\Struct\Configurator\Set;
+use Shopware\Bundle\StoreFrontBundle\Struct\Property\Set as PropertySet;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContext;
 use Shopware\Components\Routing\RouterInterface;
@@ -184,41 +184,64 @@ class EntityMapper
 
     /**
      * @param Product     $product
+     * @param Product[]   $variants
      * @param ShopContext $context
-     * @param Set         $configurator
      *
      * @return array
      */
-    public function mapProduct(Product $product, ShopContext $context, Set $configurator): array
+    public function mapProduct(Product $product, array $variants, ShopContext $context): array
     {
         $mapped = $this->mapCommonProductData($product, $context, false);
 
+        $productAttributes = [];
+        $attributeStr = [];
         if (null !== ($properties = $product->getPropertySet())) {
             foreach ($properties->getGroups() as $group) {
+                $id = $group->getId();
+                $title = $group->getName();
                 foreach ($group->getOptions() as $option) {
-                    $mapped['attributes'][$group->getId()][] = $option->getName();
+                    $value = $option->getName();
 
-                    $mapped['attributeStr'][] = [
-                        'id'    => $group->getId(),
-                        'title' => $group->getName(),
-                        'value' => $option->getName(),
+                    $productAttributes[$id][] = $value;
 
-                    ];
+                    if (empty($attributeStr[$id])) {
+                        $attributeStr[$id] = [
+                            'id' => $id,
+                            'title' => $title,
+                            'value' => [$value],
+                        ];
+                    } else {
+                        $attributeStr[$id]['value'][] = $value;
+                    }
                 }
             }
         }
 
-        foreach ($configurator->getGroups() as $group) {
-            foreach ($group->getOptions() as $option) {
-                $mapped['attributes'][$group->getId()][] = $option->getName();
+        foreach ($variants as $variant) {
+            $variantAttributes = $productAttributes;
+            foreach ($variant->getConfiguration() as $group) {
+                $id = $group->getId();
+                $title = $group->getName();
+                foreach ($group->getOptions() as $groupOption) {
+                    $value = $groupOption->getName();
+                    $variantAttributes[$id][] = $value;
 
-                $mapped['attributeStr'][] = [
-                    'id'    => $group->getId(),
-                    'title' => $group->getName(),
-                    'value' => $option->getName(),
-                ];
+                    if (empty($attributeStr[$id])) {
+                        $attributeStr[$id] = [
+                            'id' => $id,
+                            'title' => $title,
+                            'value' => [$value],
+                        ];
+                    } else {
+                        if (!in_array($value, $attributeStr[$id]['value'])) {
+                            $attributeStr[$id]['value'][] = $value;
+                        }
+                    }
+                }
             }
+            $mapped['attributes'][] = $variantAttributes;
         }
+        $mapped['attributeStr'] = array_values($attributeStr);
 
         if (0 === count($mapped['attributeStr'])) {
             unset($mapped['attributeStr']);
@@ -406,7 +429,7 @@ class EntityMapper
     /**
      * @param Product $variant
      * @param ShopContext $context
-     * @param Set[] $propertySets
+     * @param PropertySet[] $propertySets
      *
      * @return array
      * @throws NoResultException
@@ -416,28 +439,38 @@ class EntityMapper
     {
         $mapped = $this->mapCommonProductData($variant, $context, true);
 
+        $attributeStr = [];
         foreach ($propertySets as $propertySet) {
             foreach ($propertySet->getGroups() as $group) {
                 foreach ($group->getOptions() as $option) {
-                    $mapped['attributeStr'][] = [
-                        'id'    => $group->getId(),
-                        'title' => $group->getName(),
-                        'value' => $option->getName(),
-                    ];
+                    if (empty($attributeStr[$group->getId()])) {
+                        $attributeStr[$group->getId()] = [
+                            'id'    => $group->getId(),
+                            'title' => $group->getName(),
+                            'value' => [$option->getName()],
+                        ];
+                    } else {
+                        $attributeStr[$group->getId()]['value'][] = $option->getName();
+                    }
                 }
             }
         }
 
         foreach ($variant->getConfiguration() as $group) {
             foreach ($group->getOptions() as $option) {
-                $mapped['attributeStr'][] = [
-                    'id'    => $group->getId(),
-                    'title' => $group->getName(),
-                    'value' => $option->getName(),
-                ];
+                if (empty($attributeStr[$group->getId()])) {
+                    $attributeStr[$group->getId()] = [
+                        'id'    => $group->getId(),
+                        'title' => $group->getName(),
+                        'value' => [$option->getName()],
+                    ];
+                } else {
+                    $attributeStr[$group->getId()]['value'][] = $option->getName();
+                }
             }
         }
 
+        $mapped['attributeStr'] = array_values($attributeStr);
         if (0 === count($mapped['attributeStr'])) {
             unset($mapped['attributeStr']);
         }
