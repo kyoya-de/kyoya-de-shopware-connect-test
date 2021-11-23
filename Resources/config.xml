@@ -62,10 +62,35 @@
             <label lang="en">Activate recommendations</label>
         </element>
 
-        <element required="false" type="text" scope="locale">
+        <element required="false" type="select" scope="locale">
             <name>makaira_recommendations_identifier</name>
             <label lang="de">Empfehlungs Identifikator</label>
             <label lang="en">Recommendation Identifier</label>
+            <store>
+                <![CDATA[Ext.define('YourPrefix.YourName.Form', {
+                    extend: 'Ext.data.Store',
+                    fields: [
+                        { name:'id', type: 'string' },
+                        { name:'name', type: 'string' }
+                    ],
+                    autoLoad: true,
+                    pageSize: 25,
+                    proxy: {
+                        type: 'ajax',
+                        url: window.location.href.substr(0, window.location.href.indexOf('backend')) + 'backend/makaira-connect/recommendation-identifiers',
+                        reader: {
+                            type: 'json',
+                            root: 'data',
+                            totalProperty: 'total'
+                        }
+                    }
+                }).create();//new ]]>
+            </store>
+            <options>
+                <valueField>id</valueField>
+                <displayField>name</displayField>
+                <isCustomStore>true</isCustomStore>
+            </options>
         </element>
 
         <element type="button">

@@ -2,12 +2,14 @@
 
 namespace MakairaConnect\Client;
 
+use Makaira\AbstractQuery;
 use Makaira\Aggregation;
 use Makaira\Connect\Exception as ConnectException;
 use Makaira\Connect\Exceptions\UnexpectedValueException;
 use Makaira\Constraints;
 use Makaira\HttpClient;
 use Makaira\Query;
+use Makaira\RecommendationQuery;
 use Makaira\Result;
 use Makaira\ResultItem;
 use function compact;
@@ -86,7 +88,7 @@ class Api implements ApiInterface
         $query->searchPhrase = htmlspecialchars_decode($query->searchPhrase, ENT_QUOTES);
         $query->apiVersion   = $this->pluginVersion;
 
-        $this->sanatizeLanguage($query);
+        $this->sanitizeLanguage($query);
 
         $request = "{$this->baseUrl}/search/";
 
@@ -117,14 +119,14 @@ class Api implements ApiInterface
         return array_map([$this, 'parseResult'], $apiResult);
     }
 
-    private function sanatizeLanguage(Query $query)
+    private function sanitizeLanguage(AbstractQuery $query)
     {
         [$language,] = explode('_', $query->constraints[Constraints::LANGUAGE]);
         $query->constraints[Constraints::LANGUAGE] = $language;
     }
 
     /**
-     * @param array $hits
+     * @param array|null $hits
      *
      * @return Result
      */
@@ -149,5 +151,59 @@ class Api implements ApiInterface
         );
 
         return new Result($hits);
+    }
+
+    /**
+     * @throws ConnectException
+     */
+    public function getRecommendedProducts(RecommendationQuery $query, string $debug = ''): array
+    {
+        $this->sanitizeLanguage($query);
+
+        $url = "{$this->baseUrl}/recommendation/public";
+
+        $headers = $this->defaultHeaders;
+        if (!empty($debug)) {
+            $headers[] = "X-Makaira-Trace: {$debug}";
+        }
+
+        $response = $this->httpClient->request('POST', $url, json_encode($query), $headers);
+        $apiResult = json_decode($response->body, true);
+
+        if ($response->status !== 200) {
+            $message = "Connect to '{$url}' failed. HTTP-Status {$response->status}";
+            if (null !== $apiResult) {
+                $message .= "\n\n" . json_encode($apiResult, JSON_PRETTY_PRINT);
+            }
+            throw new ConnectException($message);
+        }
+
+        return $apiResult['items'];
+    }
+
+    /**
+     * @throws ConnectException
+     */
+    public function getMakairaRecommendations()
+    {
+        $url = "{$this->baseUrl}/reco";
+
+        $headers = $this->defaultHeaders;
+        if (!empty($debug)) {
+            $headers[] = "X-Makaira-Trace: {$debug}";
+        }
+
+        $response = $this->httpClient->request('GET', $url, null, $headers);
+        $apiResult = json_decode($response->body, true);
+
+        if ($response->status !== 200) {
+            $message = "Connect to '{$url}' failed. HTTP-Status {$response->status}";
+            if (null !== $apiResult) {
+                $message .= "\n\n" . json_encode($apiResult, JSON_PRETTY_PRINT);
+            }
+            throw new ConnectException($message);
+        }
+
+        return $apiResult;
     }
 }

@@ -3,7 +3,6 @@
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\NoResultException;
 use Doctrine\ORM\Query\Expr\Join;
-use Makaira\Signing\Hash\Sha256;
 use MakairaConnect\Mapper;
 use MakairaConnect\Models\MakRevision;
 use MakairaConnect\Repositories\MakRevisionRepository;
