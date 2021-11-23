@@ -1,3 +1,20 @@
+# [1.5.0](https://github.com/MakairaIO/shopware-connect/compare/1.4.0...1.5.0) (2021-11-23)
+
+
+### Bug Fixes
+
+* Remove TODO and debug information ([487da1f](https://github.com/MakairaIO/shopware-connect/commit/487da1f7ff2a4da2267c755988ce4e8e358fe467))
+* Remove TODO and debug information ([c65d774](https://github.com/MakairaIO/shopware-connect/commit/c65d7741dff503e3bf3fb364db2a0bd320bd3c01))
+
+
+### Features
+
+* Add tracking for Machine Learning ([fdddea3](https://github.com/MakairaIO/shopware-connect/commit/fdddea363b08c9b64451c916fbd969ba8aa4ea37))
+* **Tracking:** add setting to activate/deactivate Makaira tracking ([d1286cd](https://github.com/MakairaIO/shopware-connect/commit/d1286cd29280f7bd106a7be3415b18e08c560442))
+* add piwik tracking for detail, category, search and checkout ([921dd8c](https://github.com/MakairaIO/shopware-connect/commit/921dd8c0507358c07fb6deeb72371e29e36630bb))
+* **Tracking:** add setting to activate/deactivate Makaira tracking ([4c06495](https://github.com/MakairaIO/shopware-connect/commit/4c064950fa300be7d1062fe77d00e12a6f7e7c66))
+* add piwik tracking for detail, category, search and checkout ([3045eb8](https://github.com/MakairaIO/shopware-connect/commit/3045eb8a2b35276f51e8cff58fac77b34ddb3767))
+
 # [1.4.0](https://github.com/MakairaIO/shopware-connect/compare/1.3.0...1.4.0) (2021-11-23)
 
 
