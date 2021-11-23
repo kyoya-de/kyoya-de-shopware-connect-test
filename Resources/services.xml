@@ -131,7 +131,11 @@
         <service id="MakairaConnect\Service\UpdateFilters" public="true">
             <argument type="service" id="makaira.api"/>
             <argument type="service" id="models"/>
+        </service>
 
+        <service id="MakairaConnect\Subscriber\OrderSubscriber">
+            <argument key="$revisionRepository" type="expression">service('models').getRepository('MakairaConnect\\Models\\MakRevision')</argument>
+            <tag name="shopware.event_subscriber" />
         </service>
     </services>
 </container>
