@@ -1,3 +1,18 @@
+# [1.2.0](https://github.com/MakairaIO/shopware-connect/compare/1.1.0...1.2.0) (2021-11-23)
+
+
+### Bug Fixes
+
+* Change change type detection ([942ca24](https://github.com/MakairaIO/shopware-connect/commit/942ca24033bb7f798dbabc31b496f775c5d90490))
+* Touch main variant as "product" instead of current variant ([150c0ff](https://github.com/MakairaIO/shopware-connect/commit/150c0ffbeead637b29b11dfca76721ae6837d3a0))
+
+
+### Features
+
+* Add comments to explain the code ([fbee097](https://github.com/MakairaIO/shopware-connect/commit/fbee097f48f4e8498428363fc1e3026c24bea733))
+* Add listener to touch products after order creation ([89cfa01](https://github.com/MakairaIO/shopware-connect/commit/89cfa01b280b44016a10b9433abe6751b1085581))
+* Add missing touches for product import ([1bd341c](https://github.com/MakairaIO/shopware-connect/commit/1bd341ca69050dd932df5b62e5edf0336a39e777)), closes [#5](https://github.com/MakairaIO/shopware-connect/issues/5)
+
 # [1.1.0](https://github.com/MakairaIO/shopware-connect/compare/1.0.0...1.1.0) (2021-11-23)
 
 
