@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/MakairaIO/shopware-connect/compare/1.5.0...1.6.0) (2021-11-23)
+
+
+### Features
+
+* Add all shop IDs to the importer response ([86849dd](https://github.com/MakairaIO/shopware-connect/commit/86849dd61a8f3129125fe729c451125b6578bb70))
+
 # [1.5.0](https://github.com/MakairaIO/shopware-connect/compare/1.4.0...1.5.0) (2021-11-23)
 
 
