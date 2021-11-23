@@ -5,7 +5,7 @@ namespace MakairaConnect\Search\Condition;
 use Makaira\Query;
 use Shopware\Bundle\SearchBundle\ConditionInterface;
 use Shopware\Bundle\SearchBundle\Criteria;
-use Shopware\Bundle\StoreFrontBundle\Struct\ProductContextInterface;
+use Shopware\Bundle\StoreFrontBundle\Struct\ShopContextInterface;
 use function explode;
 use function strpos;
 
@@ -15,13 +15,13 @@ class ConditionParser implements ConditionParserInterface
      * @param Query                   $query
      * @param ConditionInterface      $condition
      * @param Criteria                $criteria
-     * @param ProductContextInterface $context
+     * @param ShopContextInterface $context
      */
     public function parseCondition(
         Query $query,
         ConditionInterface $condition,
         Criteria $criteria,
-        ProductContextInterface $context
+        ShopContextInterface $context
     ): void {
         if (!$condition instanceof MakairaCondition) {
             return;

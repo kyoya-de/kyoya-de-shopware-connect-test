@@ -5,18 +5,24 @@ namespace MakairaConnect\Mapper;
 use DateTime;
 use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\NonUniqueResultException;
+use Doctrine\ORM\NoResultException;
+use Exception;
 use Doctrine\DBAL;
 use MakairaConnect\Modifier\CategoryModifierInterface;
 use MakairaConnect\Modifier\ManufacturerModifierInterface;
 use MakairaConnect\Modifier\ProductModifierInterface;
 use Shopware\Bundle\StoreFrontBundle\Struct\Category as CategoryStruct;
-use Shopware\Bundle\StoreFrontBundle\Struct\Configurator\Set;
+use Shopware\Bundle\StoreFrontBundle\Struct\Property\Set as PropertySet;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product;
 use Shopware\Bundle\StoreFrontBundle\Struct\ShopContext;
 use Shopware\Components\Routing\RouterInterface;
 use Shopware\Models\Category\Category;
 use function array_flip;
 use function array_intersect;
+use Shopware\Models\Order\Detail;
+use Shopware\Models\Order\Status;
+use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_pop;
@@ -196,41 +202,64 @@ class EntityMapper
 
     /**
      * @param Product     $product
+     * @param Product[]   $variants
      * @param ShopContext $context
-     * @param Set         $configurator
      *
      * @return array
      */
-    public function mapProduct(Product $product, ShopContext $context, Set $configurator): array
+    public function mapProduct(Product $product, array $variants, ShopContext $context): array
     {
         $mapped = $this->mapCommonProductData($product, $context, false);
 
+        $productAttributes = [];
+        $attributeStr = [];
         if (null !== ($properties = $product->getPropertySet())) {
             foreach ($properties->getGroups() as $group) {
+                $id = $group->getId();
+                $title = $group->getName();
                 foreach ($group->getOptions() as $option) {
-                    $mapped['attributes'][$group->getId()][] = $option->getName();
+                    $value = $option->getName();
 
-                    $mapped['attributeStr'][] = [
-                        'id'    => $group->getId(),
-                        'title' => $group->getName(),
-                        'value' => $option->getName(),
+                    $productAttributes[$id][] = $value;
 
-                    ];
+                    if (empty($attributeStr[$id])) {
+                        $attributeStr[$id] = [
+                            'id' => $id,
+                            'title' => $title,
+                            'value' => [$value],
+                        ];
+                    } else {
+                        $attributeStr[$id]['value'][] = $value;
+                    }
                 }
             }
         }
 
-        foreach ($configurator->getGroups() as $group) {
-            foreach ($group->getOptions() as $option) {
-                $mapped['attributes'][$group->getId()][] = $option->getName();
+        foreach ($variants as $variant) {
+            $variantAttributes = $productAttributes;
+            foreach ($variant->getConfiguration() as $group) {
+                $id = $group->getId();
+                $title = $group->getName();
+                foreach ($group->getOptions() as $groupOption) {
+                    $value = $groupOption->getName();
+                    $variantAttributes[$id][] = $value;
 
-                $mapped['attributeStr'][] = [
-                    'id'    => $group->getId(),
-                    'title' => $group->getName(),
-                    'value' => $option->getName(),
-                ];
+                    if (empty($attributeStr[$id])) {
+                        $attributeStr[$id] = [
+                            'id' => $id,
+                            'title' => $title,
+                            'value' => [$value],
+                        ];
+                    } else {
+                        if (!in_array($value, $attributeStr[$id]['value'])) {
+                            $attributeStr[$id]['value'][] = $value;
+                        }
+                    }
+                }
             }
+            $mapped['attributes'][] = $variantAttributes;
         }
+        $mapped['attributeStr'] = array_values($attributeStr);
 
         if (0 === count($mapped['attributeStr'])) {
             unset($mapped['attributeStr']);
@@ -244,11 +273,13 @@ class EntityMapper
     }
 
     /**
-     * @param Product     $product
+     * @param Product $product
      * @param ShopContext $context
-     * @param bool        $asVariant
+     * @param bool $asVariant
      *
      * @return array
+     * @throws NoResultException
+     * @throws NonUniqueResultException
      */
     protected function mapCommonProductData(Product $product, ShopContext $context, bool $asVariant): array
     {
@@ -276,8 +307,19 @@ class EntityMapper
         $categories    = $product->getCategories();
         $categorySort  = [];
         $allCategories = array_map(
-            function (CategoryStruct $category) use ($context, &$categorySort, &$shops) {
-                $categorySort["cat_{$category->getId()}"] = $category->getPosition();
+            function (CategoryStruct $category) use ($context, $product, &$categorySort, &$shops) {
+                // todo: check if there is a smarter way to get the position from s_categories_manual_sorting
+                $categoryObject = $this->em->find(Category::class, $category->getId());
+                $manualSorting  = $categoryObject->getManualSorting();
+                // if no position is set, take a high value to guarantee that these will be displayed under the positioned ones
+                $position = 999;
+                foreach ($manualSorting as $sorting) {
+                    if ($product->getId() === $sorting->getProduct()->getId()) {
+                        $position = $sorting->getPosition();
+                        break;
+                    }
+                }
+                $categorySort["cat_{$category->getId()}"] = $position;
                 $shops[] = array_keys(array_intersect($this->shopCategories, $category->getPath()));
 
                 return [
@@ -315,8 +357,14 @@ class EntityMapper
             $price = ($product->getCheapestPrice() ?? $product->getVariantPrice())->getCalculatedPrice();
         }
 
-        if (null !== ($releaseDate = $product->getReleaseDate())) {
-            $releaseDate = $releaseDate->format(DateTimeInterface::ATOM);
+        $releaseDate = '0001-01-01T00:00:00';
+        if (null !== ($releaseDateObject = $product->getReleaseDate())) {
+            $releaseDate = $releaseDateObject->format(DateTimeInterface::ATOM);
+        }
+
+        $creationDate = '0001-01-01T00:00:00';
+        if (null !== ($creationDateObject = $product->getCreatedAt())) {
+            $creationDate = $creationDateObject->format(DateTimeInterface::ATOM);
         }
 
         $manufacturerTitle = '';
@@ -351,7 +399,7 @@ class EntityMapper
             'shortdesc'                    => $product->getShortDescription(),
             'longdesc'                     => $product->getLongDescription(),
             'price'                        => $price,
-            'soldamount'                   => 0,
+            'soldamount'                   => $this->getSoldAmount($product, $asVariant),
             'searchable'                   => true,
             'searchkeys'                   => '',
             'url'                          => $url,
@@ -375,6 +423,7 @@ class EntityMapper
                 'manufacturerid'     => (string) ($makManufacturer['id'] ?? ''),
                 'manufacturer_title' => $manufacturerTitle,
                 'sw_manufacturer'    => $makManufacturer,
+                'creationDate'       => (string) $creationDate,
             ],
         ];
 
@@ -400,38 +449,50 @@ class EntityMapper
     }
 
     /**
-     * @param Product     $variant
+     * @param Product $variant
      * @param ShopContext $context
-     * @param Set[]       $propertySets
+     * @param PropertySet[] $propertySets
      *
      * @return array
+     * @throws NoResultException
+     * @throws NonUniqueResultException
      */
     public function mapVariant(Product $variant, ShopContext $context, array $propertySets): array
     {
         $mapped = $this->mapCommonProductData($variant, $context, true);
 
+        $attributeStr = [];
         foreach ($propertySets as $propertySet) {
             foreach ($propertySet->getGroups() as $group) {
                 foreach ($group->getOptions() as $option) {
-                    $mapped['attributeStr'][] = [
-                        'id'    => $group->getId(),
-                        'title' => $group->getName(),
-                        'value' => $option->getName(),
-                    ];
+                    if (empty($attributeStr[$group->getId()])) {
+                        $attributeStr[$group->getId()] = [
+                            'id'    => $group->getId(),
+                            'title' => $group->getName(),
+                            'value' => [$option->getName()],
+                        ];
+                    } else {
+                        $attributeStr[$group->getId()]['value'][] = $option->getName();
+                    }
                 }
             }
         }
 
         foreach ($variant->getConfiguration() as $group) {
             foreach ($group->getOptions() as $option) {
-                $mapped['attributeStr'][] = [
-                    'id'    => $group->getId(),
-                    'title' => $group->getName(),
-                    'value' => $option->getName(),
-                ];
+                if (empty($attributeStr[$group->getId()])) {
+                    $attributeStr[$group->getId()] = [
+                        'id'    => $group->getId(),
+                        'title' => $group->getName(),
+                        'value' => [$option->getName()],
+                    ];
+                } else {
+                    $attributeStr[$group->getId()]['value'][] = $option->getName();
+                }
             }
         }
 
+        $mapped['attributeStr'] = array_values($attributeStr);
         if (0 === count($mapped['attributeStr'])) {
             unset($mapped['attributeStr']);
         }
@@ -489,5 +550,32 @@ class EntityMapper
         $this->manufacturerModifiers[] = $manufacturerModifier;
 
         return $this;
+    }
+
+    /**
+     * @throws NonUniqueResultException
+     * @throws NoResultException
+     */
+    private function getSoldAmount(Product $product, $isVariant): int
+    {
+        $orderDetailRepo = $this->em->getRepository(Detail::class);
+        $builder = $orderDetailRepo->createQueryBuilder('od');
+        $builder->select([
+            'SUM(od.quantity) AS sold_amount',
+        ])
+            ->innerJoin('od.order', 'o')
+            ->where('o.status NOT IN (:status)')
+            ->setParameter('status', [Status::ORDER_STATE_CANCELLED_REJECTED, Status::ORDER_STATE_CANCELLED])
+            ->andWhere('od.mode = 0');
+
+        if ($isVariant) {
+            $builder->andWhere('od.articleNumber = :articleNumber')
+                ->setParameter('articleNumber', $product->getNumber());
+        } else {
+            $builder->andWhere('od.articleId = :articleId')
+                ->setParameter('articleId', $product->getId());
+        }
+
+        return (int)$builder->getQuery()->getSingleScalarResult();
     }
 }

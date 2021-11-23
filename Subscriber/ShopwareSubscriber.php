@@ -3,25 +3,29 @@
 namespace MakairaConnect\Subscriber;
 
 use Enlight\Event\SubscriberInterface;
-use Psr\Container\ContainerInterface;
-use Enlight_Event_EventArgs;
-use MakairaConnect\Repositories\MakRevisionRepository;
-use MakairaConnect\Models\MakRevision;
+use Enlight_Controller_ActionEventArgs;
+use MakairaConnect\MakairaConnect;
+use MakairaConnect\Service\SearchService;
 
 class ShopwareSubscriber implements SubscriberInterface 
 {
-    /** @var MakRevisionRepository */
-    private $makRevisionRepo;
-    
     /**
-     * @var ContainerInterface
+     * @var SearchService
      */
-    private $container;
+    private $searchService;
 
-    public function __construct() {
-        $this->makRevisionRepo = Shopware()->Models()->getRepository(MakRevision::class);
-        
-        $this->container = Shopware()->Container();
+    /**
+     * @var MakairaConnect
+     */
+    private $makairaConnect;
+
+    /**
+     * @param SearchService $productSearch
+     */
+    public function __construct(SearchService $productSearch, MakairaConnect $makairaConnect)
+    {
+        $this->searchService  = $productSearch;
+        $this->makairaConnect = $makairaConnect;
     }
 
     /**
@@ -31,18 +35,33 @@ class ShopwareSubscriber implements SubscriberInterface
     public static function getSubscribedEvents(): array {
         return [
             'Enlight_Controller_Action_PostDispatch_Frontend_AjaxSearch' => 'modifySearchResults',
+            'Enlight_Controller_Action_PostDispatchSecure_Frontend' => 'onFrontendDispatch'
         ];
     }
-    
-    public function modifySearchResults(\Enlight_Controller_ActionEventArgs $scope)
+
+    /**
+     * @param Enlight_Controller_ActionEventArgs $scope
+     */
+    public function modifySearchResults(Enlight_Controller_ActionEventArgs $scope)
     {
-        $return = $scope->getReturn();
         $controller = $scope->getSubject();
         $view = $controller->View();
-        
+        $searchResult = [];
+
         if ($view->getAssign("sSearchResults")) {
-            $searchResult = $this->container->get('makaira_search.product_search')->getCompleteResult();
+            $searchResult = $this->searchService->getCompleteResult();
         }
+
         $view->assign('makairaResult', $searchResult);
     }
+
+    public function onFrontendDispatch(\Enlight_Controller_ActionEventArgs $args)
+    {
+        $subject = $args->getSubject();
+
+        $viewPath = $this->makairaConnect->getPath() . '/Resources/Views';
+
+        $subject->View()->addTemplateDir($viewPath);
+    }
+
 }
