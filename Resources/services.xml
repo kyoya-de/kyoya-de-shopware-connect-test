@@ -34,6 +34,7 @@
         <service id="makaira_connect.subscriber.event.shopware" class="MakairaConnect\Subscriber\ShopwareSubscriber">
             <argument key="$productSearch" type="service" id="MakairaConnect\Service\SearchService" />
             <tag name="shopware.event_subscriber" />
+            <argument type="expression">service('kernel').getPlugins()[parameter('makaira_connect.plugin_name')]</argument>
         </service>
 
         <service id="makaira_connect.subscriber.event.recommendation" class="MakairaConnect\Subscriber\RecommendationSubscriber">

@@ -12,9 +12,13 @@
 namespace MakairaConnect;
 
 use Doctrine\ORM\Tools\SchemaTool;
+use MakairaConnect\Client\Api;
 use MakairaConnect\DependencyInjection\ModifierCompilerPass;
 use MakairaConnect\Models\MakRevision as MakRevisionModel;
 use MakairaConnect\Service\UpdateFilters;
+use Shopware\Bundle\CookieBundle\CookieCollection;
+use Shopware\Bundle\CookieBundle\Structs\CookieGroupStruct;
+use Shopware\Bundle\CookieBundle\Structs\CookieStruct;
 use Shopware\Components\Plugin;
 use Shopware\Components\Plugin\Context\ActivateContext;
 use Shopware\Components\Plugin\Context\DeactivateContext;
@@ -117,5 +121,26 @@ class MakairaConnect extends Plugin
     {
         $this->container->get(UpdateFilters::class)->disable();
         parent::deactivate($context);
+    }
+
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            'CookieCollector_Collect_Cookies' => 'addComfortCookie'
+        ];
+    }
+
+    public function addComfortCookie(): CookieCollection
+    {
+        $makairaExperimentsCookieName = Api::MAKAIRA_EXPERIMENT_COOKIE_NAME;
+        $collection = new CookieCollection();
+        $collection->add(new CookieStruct(
+            $makairaExperimentsCookieName,
+            "/^{$makairaExperimentsCookieName}$/",
+            "Matches with only \"{$makairaExperimentsCookieName}\"",
+            CookieGroupStruct::TECHNICAL
+        ));
+
+        return $collection;
     }
 }

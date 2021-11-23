@@ -14,6 +14,26 @@
             <label lang="en">Makaira Url</label>
         </element>
 
+        <element required="false" type="text" scope="locale">
+            <name>makaira_tracking_page_id</name>
+            <label lang="de">Seiten-ID für das Tracking</label>
+            <label lang="en">Tracking Page-ID</label>
+        </element>
+
+        <element type="boolean">
+            <name>makaira_tracking_active</name>
+            <label lang="de">Makaira Tracking aktivieren</label>
+            <label lang="en">Activate Makaira Tracking</label>
+        </element>
+
+        <element required="false" type="text" scope="locale">
+            <name>makaira_connect_load_limit</name>
+            <label lang="de">Last Limitierung</label>
+            <label lang="en">Load Limitation</label>
+            <description lang="de">Üblicher Wert: Hälfte der Anzahl der CPU-Kerne auf dieser Maschine (1 CPU-Kern => .5; 4 CPU-Kerne => 2)</description>
+            <description lang="en">Common value: Half of the number of CPU cores on this machine (1 core => .5; 4 cores => 2)</description>
+        </element>
+
         <element required="true" type="select" scope="locale">
             <name>makaira_instance</name>
             <label lang="de">Makaira Instanz</label>
