@@ -3,31 +3,28 @@
 namespace MakairaConnect\Subscriber;
 
 use Enlight\Event\SubscriberInterface;
+use Enlight_Controller_ActionEventArgs;
 use MakairaConnect\MakairaConnect;
-use Psr\Container\ContainerInterface;
-use Enlight_Event_EventArgs;
-use MakairaConnect\Repositories\MakRevisionRepository;
-use MakairaConnect\Models\MakRevision;
+use MakairaConnect\Service\SearchService;
 
 class ShopwareSubscriber implements SubscriberInterface 
 {
-    /** @var MakRevisionRepository */
-    private $makRevisionRepo;
-    
     /**
-     * @var ContainerInterface
+     * @var SearchService
      */
-    private $container;
+    private $searchService;
 
     /**
      * @var MakairaConnect
      */
     private $makairaConnect;
 
-    public function __construct(MakairaConnect $makairaConnect) {
-        $this->makRevisionRepo = Shopware()->Models()->getRepository(MakRevision::class);
-        
-        $this->container = Shopware()->Container();
+    /**
+     * @param SearchService $productSearch
+     */
+    public function __construct(SearchService $productSearch, MakairaConnect $makairaConnect)
+    {
+        $this->searchService  = $productSearch;
         $this->makairaConnect = $makairaConnect;
     }
 
@@ -41,16 +38,20 @@ class ShopwareSubscriber implements SubscriberInterface
             'Enlight_Controller_Action_PostDispatchSecure_Frontend' => 'onFrontendDispatch'
         ];
     }
-    
-    public function modifySearchResults(\Enlight_Controller_ActionEventArgs $scope)
+
+    /**
+     * @param Enlight_Controller_ActionEventArgs $scope
+     */
+    public function modifySearchResults(Enlight_Controller_ActionEventArgs $scope)
     {
-        $return = $scope->getReturn();
         $controller = $scope->getSubject();
         $view = $controller->View();
-        
+        $searchResult = [];
+
         if ($view->getAssign("sSearchResults")) {
-            $searchResult = $this->container->get('makaira_search.product_search')->getCompleteResult();
+            $searchResult = $this->searchService->getCompleteResult();
         }
+
         $view->assign('makairaResult', $searchResult);
     }
 
