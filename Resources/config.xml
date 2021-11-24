@@ -14,16 +14,10 @@
             <label lang="en">Makaira Url</label>
         </element>
 
-        <element required="false" type="text" scope="locale">
-            <name>makaira_tracking_page_id</name>
-            <label lang="de">Seiten-ID für das Tracking</label>
-            <label lang="en">Tracking Page-ID</label>
-        </element>
-
-        <element type="boolean">
-            <name>makaira_tracking_active</name>
-            <label lang="de">Makaira Tracking aktivieren</label>
-            <label lang="en">Activate Makaira Tracking</label>
+        <element required="true" type="text" scope="locale">
+            <name>makaira_instance</name>
+            <label lang="de">Makaira Instanz</label>
+            <label lang="en">Makaira instance</label>
         </element>
 
         <element required="false" type="text" scope="locale">
@@ -34,106 +28,16 @@
             <description lang="en">Common value: Half of the number of CPU cores on this machine (1 core => .5; 4 cores => 2)</description>
         </element>
 
-        <element required="true" type="select" scope="locale">
-            <name>makaira_instance</name>
-            <label lang="de">Makaira Instanz</label>
-            <label lang="en">Makaira instance</label>
-            <store>
-                <option>
-                    <value>live</value>
-                    <label lang="de">live</label>
-                    <label lang="en">live</label>
-                </option>
-                <option>
-                    <value>test</value>
-                    <label lang="de">test</label>
-                    <label lang="en">test</label>
-                </option>
-            </store>
-        </element>
-
         <element type="boolean">
-            <name>makaira_search</name>
-            <label lang="de">Für Suche aktivieren</label>
-            <label lang="en">Activate for Search</label>
+            <name>makaira_tracking_active</name>
+            <label lang="de">Makaira Tracking aktivieren</label>
+            <label lang="en">Activate Makaira Tracking</label>
         </element>
 
-        <element type="boolean">
-            <name>makaira_category</name>
-            <label lang="de">Für Kategorie aktivieren</label>
-            <label lang="en">Activate for Category</label>
-        </element>
-
-        <element type="boolean">
-            <name>makaira_manufacturer</name>
-            <label lang="de">Für Hersteller aktivieren</label>
-            <label lang="en">Activate for manufacturers</label>
-        </element>
-
-        <element type="boolean">
-            <name>makaira_subcategory_products</name>
-            <label lang="de">Oberkategorie enthält alle Produkte der Unterkategorien</label>
-            <label lang="en">Parent Category stores all products of all subcategories</label>
-        </element>
-
-        <element type="boolean">
-            <name>makaira_recommendations_active</name>
-            <label lang="de">Empfehlungen aktivieren</label>
-            <label lang="en">Activate recommendations</label>
-        </element>
-
-        <element required="false" type="select" scope="locale">
-            <name>makaira_recommendations_identifier</name>
-            <label lang="de">Empfehlungs Identifikator</label>
-            <label lang="en">Recommendation Identifier</label>
-            <store>
-                <![CDATA[Ext.define('YourPrefix.YourName.Form', {
-                    extend: 'Ext.data.Store',
-                    fields: [
-                        { name:'id', type: 'string' },
-                        { name:'name', type: 'string' }
-                    ],
-                    autoLoad: true,
-                    pageSize: 25,
-                    proxy: {
-                        type: 'ajax',
-                        url: window.location.href.substr(0, window.location.href.indexOf('backend')) + 'backend/makaira-connect/recommendation-identifiers',
-                        reader: {
-                            type: 'json',
-                            root: 'data',
-                            totalProperty: 'total'
-                        }
-                    }
-                }).create();//new ]]>
-            </store>
-            <options>
-                <valueField>id</valueField>
-                <displayField>name</displayField>
-                <isCustomStore>true</isCustomStore>
-            </options>
-        </element>
-
-        <element type="button">
-            <name>makaira_update_filter</name>
-            <label lang="de">Filter synchronisieren</label>
-            <label lang="en">Synchronize filter</label>
-            <options>
-                <handler>
-                    <![CDATA[
-                    function() {
-                        Ext.Ajax.request({
-                            url: 'MakairaConnectConfigurationAction/updateFilters',
-                            success: function (response) {
-                                Shopware.Msg.createGrowlMessage(response.statusText, response.responseText);
-                            },
-                            failure: function (response) {
-                                Shopware.Msg.createGrowlMessage(response.statusText, response.responseText)
-                            }
-                        });
-                    }
-                    ]]>
-                </handler>
-            </options>
+        <element required="false" type="text" scope="locale">
+            <name>makaira_tracking_page_id</name>
+            <label lang="de">Seiten-ID für das Tracking</label>
+            <label lang="en">Tracking Page-ID</label>
         </element>
     </elements>
 </config>
