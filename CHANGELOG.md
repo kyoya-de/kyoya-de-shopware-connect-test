@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/MakairaIO/shopware-connect/compare/1.6.0...1.6.1) (2021-11-25)
+
+
+### Bug Fixes
+
+* **Plugin Backend:** Add makaira connect description ([5b3055e](https://github.com/MakairaIO/shopware-connect/commit/5b3055e9eb9cb385632a02da7cd24a3910ddf8ca))
+
 # [1.6.0](https://github.com/MakairaIO/shopware-connect/compare/1.5.0...1.6.0) (2021-11-23)
 
 
