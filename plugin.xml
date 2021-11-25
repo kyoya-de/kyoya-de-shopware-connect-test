@@ -8,6 +8,7 @@
     <link>http://www.marmalade.de/</link>
     <author>marmalade GmbH</author>
     <description>Connector to Makaira</description>
-    <description lang="de">Makaira Connect</description>
+    <description lang="en">Connect your Shopware 5 store to the headless e-commerce marketing platform Makaira in just a few minutes and use the CMS, recommendations, A/B testing search and further functionalities.</description>
+    <description lang="de">Verbinde Dein Shopware 5 Shop in nur wenigen Minuten mit der Headless E-Commerce Marketing Plattform Makaira und nutze das CMS, Recommendations, A/B-Testing, Suche und weitere Funktionen.</description>
     <compatibility minVersion="5.2.7" />
 </plugin>
