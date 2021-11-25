@@ -28,8 +28,6 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 
 class MakairaConnect extends Plugin
 {
-    const MAKAIRA_EXPERIMENT_COOKIE_NAME = 'makairaExperiments';
-
     /**
      * @param ContainerBuilder $container
      */
@@ -121,13 +119,14 @@ class MakairaConnect extends Plugin
 
     public function addComfortCookie(): CookieCollection
     {
-        $makairaExperimentsCookieName = static::MAKAIRA_EXPERIMENT_COOKIE_NAME;
+        $ns = $this->container->get('snippets')->getNamespace('makaira/tracking');
+
         $collection = new CookieCollection();
         $collection->add(new CookieStruct(
-            $makairaExperimentsCookieName,
-            "/^{$makairaExperimentsCookieName}$/",
-            "Matches with only \"{$makairaExperimentsCookieName}\"",
-            CookieGroupStruct::TECHNICAL
+            'makairaTracking',
+            "/^makaira/",
+            (string) $ns->get('makaira/tracking/consent_description'),
+            CookieGroupStruct::STATISTICS
         ));
 
         return $collection;
