@@ -18,8 +18,8 @@ class AddSeoMeta implements ProductModifierInterface, CategoryModifierInterface,
      */
     public function modifyCategory(array &$mappedData, Category $item, ShopContext $context): void
     {
-        $mapped['meta_keywords']    = (string) $item->getMetaKeywords();
-        $mapped['meta_description'] = (string) $item->getMetaDescription();
+        $mappedData['meta_keywords']    = (string) $item->getMetaKeywords();
+        $mappedData['meta_description'] = (string) $item->getMetaDescription();
     }
 
     /**
