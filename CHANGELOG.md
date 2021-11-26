@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/MakairaIO/shopware-connect/compare/2.0.0...2.0.1) (2021-11-26)
+
+
+### Bug Fixes
+
+* **License:** Added license file ([f36d4f9](https://github.com/MakairaIO/shopware-connect/commit/f36d4f9db03e7bb42ee005d22b1407e3f1c46e94))
+
 # [2.0.0](https://github.com/MakairaIO/shopware-connect/compare/1.7.0...2.0.0) (2021-11-26)
 
 
