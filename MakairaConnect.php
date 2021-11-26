@@ -12,16 +12,12 @@
 namespace MakairaConnect;
 
 use Doctrine\ORM\Tools\SchemaTool;
-use MakairaConnect\Client\Api;
 use MakairaConnect\DependencyInjection\ModifierCompilerPass;
 use MakairaConnect\Models\MakRevision as MakRevisionModel;
-use MakairaConnect\Service\UpdateFilters;
 use Shopware\Bundle\CookieBundle\CookieCollection;
 use Shopware\Bundle\CookieBundle\Structs\CookieGroupStruct;
 use Shopware\Bundle\CookieBundle\Structs\CookieStruct;
 use Shopware\Components\Plugin;
-use Shopware\Components\Plugin\Context\ActivateContext;
-use Shopware\Components\Plugin\Context\DeactivateContext;
 use Shopware\Components\Plugin\Context\InstallContext;
 use Shopware\Components\Plugin\Context\UninstallContext;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -115,15 +111,6 @@ class MakairaConnect extends Plugin
         );
     }
 
-    /**
-     * This method can be overridden
-     */
-    public function deactivate(DeactivateContext $context)
-    {
-        $this->container->get(UpdateFilters::class)->disable();
-        parent::deactivate($context);
-    }
-
     public static function getSubscribedEvents(): array
     {
         return [
@@ -133,13 +120,14 @@ class MakairaConnect extends Plugin
 
     public function addComfortCookie(): CookieCollection
     {
-        $makairaExperimentsCookieName = Api::MAKAIRA_EXPERIMENT_COOKIE_NAME;
+        $ns = $this->container->get('snippets')->getNamespace('makaira/tracking');
+
         $collection = new CookieCollection();
         $collection->add(new CookieStruct(
-            $makairaExperimentsCookieName,
-            "/^{$makairaExperimentsCookieName}$/",
-            "Matches with only \"{$makairaExperimentsCookieName}\"",
-            CookieGroupStruct::TECHNICAL
+            'makairaTracking',
+            "/^makaira/",
+            (string) $ns->get('makaira/tracking/consent_description'),
+            CookieGroupStruct::STATISTICS
         ));
 
         return $collection;

@@ -3,28 +3,20 @@
 namespace MakairaConnect\Subscriber;
 
 use Enlight\Event\SubscriberInterface;
-use Enlight_Controller_ActionEventArgs;
 use MakairaConnect\MakairaConnect;
-use MakairaConnect\Service\SearchService;
 
 class ShopwareSubscriber implements SubscriberInterface 
 {
-    /**
-     * @var SearchService
-     */
-    private $searchService;
-
     /**
      * @var MakairaConnect
      */
     private $makairaConnect;
 
     /**
-     * @param SearchService $productSearch
+     * @param MakairaConnect $makairaConnect
      */
-    public function __construct(SearchService $productSearch, MakairaConnect $makairaConnect)
+    public function __construct(MakairaConnect $makairaConnect)
     {
-        $this->searchService  = $productSearch;
         $this->makairaConnect = $makairaConnect;
     }
 
@@ -34,25 +26,8 @@ class ShopwareSubscriber implements SubscriberInterface
     */
     public static function getSubscribedEvents(): array {
         return [
-            'Enlight_Controller_Action_PostDispatch_Frontend_AjaxSearch' => 'modifySearchResults',
             'Enlight_Controller_Action_PostDispatchSecure_Frontend' => 'onFrontendDispatch'
         ];
-    }
-
-    /**
-     * @param Enlight_Controller_ActionEventArgs $scope
-     */
-    public function modifySearchResults(Enlight_Controller_ActionEventArgs $scope)
-    {
-        $controller = $scope->getSubject();
-        $view = $controller->View();
-        $searchResult = [];
-
-        if ($view->getAssign("sSearchResults")) {
-            $searchResult = $this->searchService->getCompleteResult();
-        }
-
-        $view->assign('makairaResult', $searchResult);
     }
 
     public function onFrontendDispatch(\Enlight_Controller_ActionEventArgs $args)
