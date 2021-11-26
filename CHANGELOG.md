@@ -1,3 +1,12 @@
+## [2.0.4](https://github.com/MakairaIO/shopware-connect/compare/2.0.3...2.0.4) (2021-11-26)
+
+
+### Bug Fixes
+
+* Move variable to global scope ([78f12e8](https://github.com/MakairaIO/shopware-connect/commit/78f12e8921303f1b9335c233e2fb5f550b0ba6da))
+* Remove typo ([39c96cd](https://github.com/MakairaIO/shopware-connect/commit/39c96cdd1bb1fef37e7cfe9c135a833aa1acb7be))
+* Remove unnecessary and broken event listener ([3b25b1f](https://github.com/MakairaIO/shopware-connect/commit/3b25b1fe64f91d4b571d46c6e8c8790d0bb67485))
+
 ## [2.0.3](https://github.com/MakairaIO/shopware-connect/compare/2.0.2...2.0.3) (2021-11-26)
 
 
