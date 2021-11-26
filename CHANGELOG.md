@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/MakairaIO/shopware-connect/compare/2.0.1...2.0.2) (2021-11-26)
+
+
+### Bug Fixes
+
+* **License:** Added GPL 3.0 license to composer.json ([d5b3248](https://github.com/MakairaIO/shopware-connect/commit/d5b3248759bd6eb700e74e2eedf9c9685afe83f0))
+
 ## [2.0.1](https://github.com/MakairaIO/shopware-connect/compare/2.0.0...2.0.1) (2021-11-26)
 
 
