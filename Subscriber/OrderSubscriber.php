@@ -7,6 +7,7 @@ use Doctrine\ORM;
 use Enlight\Event\SubscriberInterface;
 use Enlight_Event_EventArgs;
 use MakairaConnect\Repositories\MakRevisionRepository;
+use PDO;
 use sOrder;
 use function Doctrine\DBAL\Query\QueryBuilder;
 
@@ -52,7 +53,7 @@ class OrderSubscriber implements SubscriberInterface
     {
         // Create doctrine query to fetch the ordernumber of the main product details (also known as "parent").
         $qb = $this->db->createQueryBuilder();
-        $qb->select('ad.ordernumber')
+        $qb->select('ad.ordernumber', 'a.id')
             ->from('s_articles', 'a')
             ->from('s_articles_details', 'ad')
             ->where(
@@ -67,10 +68,19 @@ class OrderSubscriber implements SubscriberInterface
         foreach ($order->sBasketData['content'] as $basketProduct) {
             // Skip virtual products like discounts.
             if (0 < $basketProduct['articleID']) {
-                $this->revisionRepository->addRevision('variant', $basketProduct['ordernumber']);
+                $this->revisionRepository->addRevision(
+                    'variant',
+                    (string) $basketProduct['ordernumber'],
+                    (int) $basketProduct['articleDetailId']
+                );
+
                 $qb->setParameter('articleID', $basketProduct['articleID']);
-                $productOrderNo = $qb->execute()->fetchColumn();
-                $this->revisionRepository->addRevision('product', $productOrderNo);
+                $productInfo = $qb->execute()->fetch(PDO::FETCH_ASSOC);
+                $this->revisionRepository->addRevision(
+                    'product',
+                    (string) $productInfo['ordernumber'],
+                    (int) $basketProduct['articleID']
+                );
             }
         }
     }

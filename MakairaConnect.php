@@ -60,7 +60,8 @@ class MakairaConnect extends Plugin
      */
     private function installModels()
     {
-        $this->fetchSchemaTool()->updateSchema(
+        $schemaTool = $this->fetchSchemaTool();
+        $schemaTool->updateSchema(
             $this->getMappingClassesMetaData(),
             true
         );
