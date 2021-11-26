@@ -3,21 +3,9 @@
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/shopware/5.2/engine/Shopware/Components/Plugin/schema/config.xsd">
     <elements>
         <element required="true" type="text" scope="locale">
-            <name>makaira_application_url</name>
-            <label lang="de">Makaira Url</label>
-            <label lang="en">Makaira Url</label>
-        </element>
-
-        <element required="true" type="text" scope="locale">
             <name>makaira_connect_secret</name>
             <label lang="de">Shared Secret</label>
             <label lang="en">Shared Secret</label>
-        </element>
-
-        <element required="true" type="text" scope="locale">
-            <name>makaira_instance</name>
-            <label lang="de">Makaira Instanz</label>
-            <label lang="en">Makaira instance</label>
         </element>
 
         <element type="boolean">
