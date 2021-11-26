@@ -91,31 +91,29 @@
                 {/if}
 
                 {* ADD TO CART *}
-                window.addEventListener('load', function () {
-                    const ele = document.getElementsByName('sAddToBasket');
-                    if (ele[0]) {
-                      ele[0].addEventListener("submit", function () {
-                        const quantitySelect = document.getElementById('sQuantity');
-                        _paq.push([
-                          "addEcommerceItem",
-                          '{$sArticle.ordernumber|escape:'javascript'}',
-                          '{$sArticle.articleName|escape:'javascript'}',
-                          '{$sArticle.categoryID}',
-                          '{$sArticle.price_numeric|round:2}',
-                          quantitySelect.value
-                        ]);
+                const ele = document.getElementsByName('sAddToBasket');
+                if (ele[0]) {
+                  ele[0].addEventListener("submit", function () {
+                    const quantitySelect = document.getElementById('sQuantity');
+                    _paq.push([
+                      "addEcommerceItem",
+                      '{$sArticle.ordernumber|escape:'javascript'}',
+                      '{$sArticle.articleName|escape:'javascript'}',
+                      '{$sArticle.categoryID}',
+                      '{$sArticle.price_numeric|round:2}',
+                      quantitySelect.value
+                    ]);
 
-                        const xmlHttp = new XMLHttpRequest();
-                        xmlHttp.open("GET", '{url controller=checkout action=ajaxAmount}', false);
-                        xmlHttp.send(null);
-                        const response = JSON.parse(xmlHttp.response);
-                        let cartTotal = response.amount;
-                        cartTotal = cartTotal.match(/[+-]?\d+(\.\d+)?/g)[0];
-                        _paq.push(["trackEcommerceCartUpdate", cartTotal]);
-                      }, false);
-                    }
-                });
-
+                    const xmlHttp = new XMLHttpRequest();
+                    xmlHttp.open("GET", '{url controller=checkout action=ajaxAmount}', false);
+                    xmlHttp.send(null);
+                    const response = JSON.parse(xmlHttp.response);
+                    let cartTotal = response.amount;
+                    cartTotal = cartTotal.match(/[+-]?\d+(\.\d+)?/g)[0];
+                    _paq.push(["trackEcommerceCartUpdate", cartTotal]);
+                  }, false);
+                }
+ä
                 {* A/B EXPERIMENTS *}
                 function getCookie(cname) {
                     let name = cname + "=";
