@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/MakairaIO/shopware-connect/compare/1.6.1...1.7.0) (2021-11-26)
+
+
+### Features
+
+* Add IDs to revision table for valid delete responses ([c6c068c](https://github.com/MakairaIO/shopware-connect/commit/c6c068cfbe1e884ae6978f75498b6469f2648f93))
+
 ## [1.6.1](https://github.com/MakairaIO/shopware-connect/compare/1.6.0...1.6.1) (2021-11-25)
 
 
