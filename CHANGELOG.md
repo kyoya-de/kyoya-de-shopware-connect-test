@@ -1,3 +1,24 @@
+# [2.0.0](https://github.com/MakairaIO/shopware-connect/compare/1.7.0...2.0.0) (2021-11-26)
+
+
+### Bug Fixes
+
+* **composer:** Set correct package name ([c2ccda1](https://github.com/MakairaIO/shopware-connect/commit/c2ccda1d9de6d91e9fbcfc2501d6ca16ba94ded2))
+* Incorrect name of a variable ([38f9024](https://github.com/MakairaIO/shopware-connect/commit/38f90242b3ea16e2d2bf1a483200c9fd7e152efb))
+
+
+### Features
+
+* Add cookie consent compability ([2e3aa55](https://github.com/MakairaIO/shopware-connect/commit/2e3aa5555087cb6c3255360da6c3bee83ba203aa))
+* Reduce functionality to an import source for Makaira ([cbb4fef](https://github.com/MakairaIO/shopware-connect/commit/cbb4fef7c24e750571a988223010e72518800a29))
+* Remove unsued plugin setting ([c6c38f6](https://github.com/MakairaIO/shopware-connect/commit/c6c38f6687aaa622e93292e2e76f90e67984fdf3))
+* Remove unused plugin settings ([3d0827b](https://github.com/MakairaIO/shopware-connect/commit/3d0827bd4b00e7d1cc6625ab1504dd5f15ca4969))
+
+
+### BREAKING CHANGES
+
+* Any comfort functionality has been removed.
+
 # [1.7.0](https://github.com/MakairaIO/shopware-connect/compare/1.6.1...1.7.0) (2021-11-26)
 
 
