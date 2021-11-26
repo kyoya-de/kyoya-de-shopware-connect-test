@@ -13,11 +13,5 @@
     "psr-4": {
       "MakairaConnect\\": "./"
     }
-  },
-  "repositories": [
-    {
-      "type": "git",
-      "url": "git@gitlab.marmalade.de:makaira/shared-libs.git"
-    }
-  ]
+  }
 }
