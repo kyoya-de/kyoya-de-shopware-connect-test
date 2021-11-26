@@ -1,3 +1,11 @@
+## [2.0.3](https://github.com/MakairaIO/shopware-connect/compare/2.0.2...2.0.3) (2021-11-26)
+
+
+### Bug Fixes
+
+* **author:** Fix company name to makaira GmbH ([7de71b3](https://github.com/MakairaIO/shopware-connect/commit/7de71b31548bc416532dfc77626db4cdf55ec685))
+* **deps:** Don't use marmalde gitlab anymore ([38b42b3](https://github.com/MakairaIO/shopware-connect/commit/38b42b3e484de78935daa026092c3bc7f5a0fc75))
+
 ## [2.0.2](https://github.com/MakairaIO/shopware-connect/compare/2.0.1...2.0.2) (2021-11-26)
 
 
