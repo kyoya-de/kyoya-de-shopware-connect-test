@@ -26,13 +26,13 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * This file is part of a marmalade GmbH project
+ * This file is part of a makaira GmbH project
  * It is not Open Source and may not be redistributed.
- * For contact information please visit http://www.marmalade.de
+ * For contact information please visit http://www.makaira.io
  *
  * @version    0.1
- * @author     Stefan Krenz <krenz@marmalade.de>
- * @link       http://www.marmalade.de
+ * @author     Stefan Krenz <sk@makaira.io>
+ * @link       http://www.makaira.io
  */
 class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Action implements CSRFWhitelistAware
 {

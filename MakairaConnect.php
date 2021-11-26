@@ -1,12 +1,12 @@
 <?php
 /**
- * This file is part of a marmalade GmbH project
+ * This file is part of a makaira GmbH project
  * It is not Open Source and may not be redistributed.
- * For contact information please visit http://www.marmalade.de
+ * For contact information please visit https://www.makaira.io
  *
  * @version    1.0
- * @author     Stefan Krenz, Christopher Schnecke. Jennifer Timm <hello@makaira.io>
- * @link       http://www.marmalade.de
+ * @author     Stefan Krenz, Christopher Schnecke, Jennifer Timm
+ * @link       https://www.makaira.io
  */
 
 namespace MakairaConnect;
