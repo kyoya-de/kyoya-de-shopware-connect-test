@@ -11,6 +11,7 @@ use Shopware\Components\Model\ModelEntity;
 use Shopware\Models\Article\Article;
 use Shopware\Models\Article\Detail;
 use function array_map;
+use function in_array;
 
 /**
  * MakRevisionRepository
@@ -20,28 +21,20 @@ class MakRevisionRepository extends EntityRepository implements Enlight_Hook
     private const DOCTRINE_REFRESH_FREQUENCY = 500;
 
     /**
-     * @param $type
-     * @param $objectId
+     * @param string $type
+     * @param string $objectId
      *
      * @throws OptimisticLockException
      * @throws ORMException
      */
-    public function addRevision($type, $objectId)
+    public function addRevision(string $type, string $objectId, string $entityId = null)
     {
-        $data = ['type' => $type, 'id' => $objectId];
-
-        /** @var MakRevisionModel $revision */
-        $revision = $this->findOneBy($data);
-
-        if ($revision) {
-            $this->_em->remove($revision);
-            $this->_em->flush();
-        }
-
-        $revision = new MakRevisionModel();
-        $revision->fromArray($data);
-        $this->_em->persist($revision);
-        $this->_em->flush();
+        $statement = $this->_em
+            ->getConnection()
+            ->prepare(
+                'REPLACE INTO mak_revision (`type`, `id`, `entity_id`, `changed`) VALUES (:type, :id, :entityId, NOW())'
+            );
+        $statement->execute(['type' => $type, 'id' => $objectId, 'entityId' => $entityId]);
     }
 
     /**
@@ -51,55 +44,34 @@ class MakRevisionRepository extends EntityRepository implements Enlight_Hook
      * @throws ORMException
      * @throws OptimisticLockException
      */
-    public function addRevisions(string $type, $objects): void
+    public function addRevisions(string $type, array $objects): void
     {
-        $objectIds = array_map(
-            static function ($object) use ($type) {
+        $objectIds = [];
+        foreach ($objects as $object) {
+            try {
+                $id = $object->getId();
                 if ('product' === $type && $object instanceof Article) {
-                    return $object->getMainDetail()->getNumber();
+                    $id = $object->getMainDetail()->getNumber();
                 }
 
                 if ('variant' === $type && $object instanceof Detail) {
-                    return $object->getNumber();
+                    $id = $object->getNumber();
                 }
 
-                return $object->getId();
-            },
-            $objects
-        );
-
-        $qb = $this->createQueryBuilder('mr');
-        /** @var MakRevisionModel[] $revisions */
-        $revisions = $qb->select()->where(
-            $qb->expr()->andX(
-                $qb->expr()->in('mr.id', $objectIds),
-                $qb->expr()->eq('mr.type', ':type')
-            )
-        )->setParameter('type', $type)->getQuery()->getResult();
-
-        $i = 0;
-
-        foreach ($revisions as $revision) {
-            $this->_em->remove($revision);
-            if (0 === ($i % self::DOCTRINE_REFRESH_FREQUENCY)) {
-                $this->_em->flush();
+                $objectIds[$object->getId()] = $id;
+            } catch (ORMException $e) {
+                // Skip erroneous article.
             }
-
-            $i++;
         }
 
-        $this->_em->flush();
+        $statement = $this->_em
+            ->getConnection()
+            ->prepare(
+                'REPLACE INTO mak_revision (`type`, `id`, `entity_id`, `changed`) VALUES (:type, :id, :entityId, NOW())'
+            );
 
-        $i = 0;
-        foreach ($objectIds as $objectId) {
-            $revision = (new MakRevisionModel())->setType($type)->setId($objectId);
-
-            $this->_em->persist($revision);
-            if (0 === ($i % self::DOCTRINE_REFRESH_FREQUENCY)) {
-                $this->_em->flush();
-            }
-
-            $i++;
+        foreach ($objectIds as $entityId => $objectId) {
+            $statement->execute(['type' => $type, 'id' => $objectId, 'entityId' => $entityId]);
         }
 
         $this->_em->flush();
@@ -111,7 +83,7 @@ class MakRevisionRepository extends EntityRepository implements Enlight_Hook
      *
      * @return MakRevisionModel[]
      */
-    public function getRevisions($lastRev, $count = 50)
+    public function getRevisions(int $lastRev, int $count = 50): array
     {
         $query = $this->createQueryBuilder('revisions')->select()->where('revisions.sequence > :lastRev')->setParameter(
             'lastRev',
@@ -121,7 +93,14 @@ class MakRevisionRepository extends EntityRepository implements Enlight_Hook
         return $query->getResult();
     }
 
-    public function countSince($lastRev)
+    /**
+     * @param $lastRev
+     *
+     * @return int
+     * @throws \Doctrine\ORM\NoResultException
+     * @throws \Doctrine\ORM\NonUniqueResultException
+     */
+    public function countSince($lastRev): int
     {
         $qb    = $this->createQueryBuilder('revs');
         $query =

@@ -3,6 +3,7 @@
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\NoResultException;
 use Doctrine\ORM\Query\Expr\Join;
+use Makaira\Signing\Hash\Sha256;
 use MakairaConnect\Mapper;
 use MakairaConnect\Models\MakRevision;
 use MakairaConnect\Repositories\MakRevisionRepository;
@@ -15,6 +16,7 @@ use Shopware\Bundle\StoreFrontBundle\Struct\Category;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product;
 use Shopware\Components\CSRFWhitelistAware;
 use Shopware\Components\Model\ModelManager;
+use Shopware\Components\Plugin\Configuration\ReaderInterface;
 use Shopware\Models\Article\Detail;
 use Shopware\Models\Shop\Locale;
 use Shopware\Models\Shop\Repository;
@@ -74,7 +76,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
             $this->makairaRequest->request->replace($decoded);
         }
 
-        $configReader = $this->container->get('shopware.plugin.config_reader');
+        $configReader = $this->container->get(ReaderInterface::class);
         $this->config = $configReader->getByPluginName('MakairaConnect');
 
         $this->verifySignature($this->config['makaira_connect_secret']);
@@ -177,6 +179,9 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         $this->{$this->makairaRequest->request->get('action')}();
     }
 
+    /**
+     *
+     */
     public function getReplicationStatus()
     {
         $repo    = $this->em->getRepository(MakRevision::class);
@@ -186,6 +191,25 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
         }
 
         (new JsonResponse($indices))->send();
+    }
+
+    /**
+     * @param MakRevision[] $revisions
+     * @param string[]      $productIds
+     * @param string[]      $loadedIds
+     *
+     * @return array
+     */
+    protected function getDeletedChanges(array $revisions, array $productIds, array $loadedIds): array
+    {
+        $deletedIds     = array_diff($productIds, $loadedIds);
+        $deletedChanges = [];
+        foreach ($deletedIds as $deletedId) {
+            $revision = $revisions[$deletedId];
+            $revision->setId($revision->getEntityId());
+            $deletedChanges[] = $this->buildChangesHead($revision, null, true);
+        }
+        return $deletedChanges;
     }
 
     private function listLanguages()
@@ -306,13 +330,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
             ),
         ];
 
-        $deletedIds = array_diff($productIds, $loadedIds);
-        $changes[]  = array_map(
-            function ($deletedId) use ($revisions) {
-                return $this->buildChangesHead($revisions[$deletedId]);
-            },
-            array_values($deletedIds)
-        );
+        $changes[] = $this->getDeletedChanges($revisions, $productIds, $loadedIds);
 
         return (array) array_merge(...$changes);
     }
@@ -342,16 +360,17 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
      * data     => object data set
      *
      * @param MakRevision $revision
-     * @param array            $data
+     * @param array|null  $data
+     * @param bool        $deleted
      *
      * @return array
      */
-    private function buildChangesHead(MakRevision $revision, array $data = []): array
+    private function buildChangesHead(MakRevision $revision, ?array $data = [], bool $deleted = false): array
     {
         return [
-            'id'       => [] !== $data ? $data['id'] : $revision->getId(),
+            'id'       => (int) (!$deleted ? $data['id'] : $revision->getId()),
             'sequence' => $revision->getSequence(),
-            'deleted'  => [] === $data,
+            'deleted'  => $deleted,
             'type'     => $revision->getType(),
             'data'     => $data,
         ];
@@ -422,13 +441,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
             ),
         ];
 
-        $deletedIds = array_diff($productIds, $loadedIds);
-        $changes[]  = array_map(
-            function ($deletedId) use ($revisions) {
-                return $this->buildChangesHead($revisions[$deletedId]);
-            },
-            array_values($deletedIds)
-        );
+        $changes[] = $this->getDeletedChanges($revisions, $productIds, $loadedIds);
 
         return (array) array_merge(...$changes);
     }
@@ -466,7 +479,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
 
         $changes[] = array_map(
             function ($deletedId) use ($revisions) {
-                return $this->buildChangesHead($revisions[$deletedId]);
+                return $this->buildChangesHead($revisions[$deletedId], null, true);
             },
             array_diff($categoryIds, $loadedIds)
         );
@@ -506,7 +519,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
 
         $changes[] = array_map(
             function ($deletedId) use ($revisions) {
-                return $this->buildChangesHead($revisions[$deletedId]);
+                return $this->buildChangesHead($revisions[$deletedId], null, true);
             },
             array_diff($ids, $loadedIds)
         );

@@ -48,8 +48,8 @@
         </service>
 
         <service id="makaira_connect.subscriber.event.doctrine" class="MakairaConnect\Subscriber\DoctrineSubscriber">
+            <argument key="$logger" type="service" id="pluginlogger"/>
             <tag name="doctrine.event_subscriber" />
-            <argument type="service" id="pluginlogger"/>
         </service>
 
         <service id="category.repository" class="Doctrine\ORM\EntityRepository">
@@ -57,7 +57,7 @@
             <argument>Shopware\Models\Category\Category</argument>
         </service>
 
-        <service id="makaira.revision.repository" class="Doctrine\ORM\EntityRepository">
+        <service id="makaira.revision.repository" class="MakairaConnect\Repositories\MakRevisionRepository">
             <factory service="models" method="getRepository"/>
             <argument>MakairaConnect\Models\MakRevision</argument>
         </service>

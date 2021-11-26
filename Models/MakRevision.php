@@ -3,12 +3,15 @@
 namespace MakairaConnect\Models;
 
 use DateTime;
-use Shopware\Components\Model\ModelEntity;
+use DateTimeInterface;
 use Doctrine\ORM\Mapping as ORM;
+use Shopware\Components\Model\ModelEntity;
 
 /**
  * @ORM\Entity(repositoryClass="MakairaConnect\Repositories\MakRevisionRepository")
- * @ORM\Table(name="mak_revision", uniqueConstraints={@ORM\UniqueConstraint(name="mak_unique_doc", columns={"id", "type"})})
+ * @ORM\Table(name="mak_revision", uniqueConstraints={
+ *     @ORM\UniqueConstraint(name="mak_unique_doc", columns={"id", "type"})
+ * })
  */
 class MakRevision extends ModelEntity
 {
@@ -51,10 +54,18 @@ class MakRevision extends ModelEntity
     private $changed;
 
     /**
+     * @var string|null
+     *
+     * @ORM\Column(name="entity_id", type="bigint", nullable=true)
+     */
+    private $entityId;
+
+    /**
      * set default date
      */
-    public function __construct() {
-      $this->changed = new DateTime('now');
+    public function __construct()
+    {
+        $this->changed = new DateTime('now');
     }
 
     /**
@@ -68,7 +79,7 @@ class MakRevision extends ModelEntity
     /**
      * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
@@ -78,7 +89,7 @@ class MakRevision extends ModelEntity
      *
      * @return MakRevision
      */
-    public function setType($type)
+    public function setType(string $type): self
     {
         $this->type = $type;
 
@@ -86,19 +97,19 @@ class MakRevision extends ModelEntity
     }
 
     /**
-     * @return int
+     * @return string
      */
-    public function getId()
+    public function getId(): string
     {
         return $this->id;
     }
 
     /**
-     * @param int $id
+     * @param string $id
      *
      * @return MakRevision
      */
-    public function setId($id)
+    public function setId(string $id): self
     {
         $this->id = $id;
 
@@ -108,7 +119,7 @@ class MakRevision extends ModelEntity
     /**
      * @return DateTime
      */
-    public function getChanged()
+    public function getChanged(): DateTimeInterface
     {
         return $this->changed;
     }
@@ -118,9 +129,29 @@ class MakRevision extends ModelEntity
      *
      * @return MakRevision
      */
-    public function setChanged($changed)
+    public function setChanged(DateTimeInterface $changed): self
     {
         $this->changed = $changed;
+
+        return $this;
+    }
+
+    /**
+     * @return int|null
+     */
+    public function getEntityId(): ?int
+    {
+        return $this->entityId;
+    }
+
+    /**
+     * @param int|null $entityId
+     *
+     * @return MakRevision
+     */
+    public function setEntityId(?int $entityId): MakRevision
+    {
+        $this->entityId = $entityId;
 
         return $this;
     }
