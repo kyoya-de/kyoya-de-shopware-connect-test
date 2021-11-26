@@ -4,6 +4,8 @@
     {$smarty.block.parent}
     {if {config name='makaira_tracking_page_id' namespace='MakairaConnect'} and {config name='makaira_tracking_active' namespace='MakairaConnect'}}
         <script type="text/javascript">
+            var _paq = window._paq || [];
+
             window.addEventListener('load', function () {
                 if ($.getCookiePreference('makairaTracking')) {
                   executeMakairaTracking();
@@ -11,8 +13,6 @@
             });
 
             function executeMakairaTracking() {
-                var _paq = window._paq || [];
-
                 _paq.push(['enableLinkTracking']);
 
                 {* PRODUCT DETAIL PAGE *}
