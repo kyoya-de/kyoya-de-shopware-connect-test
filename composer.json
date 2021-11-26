@@ -1,5 +1,6 @@
 {
   "name": "makaira/shopware5-connect",
+  "license": "GPL-3.0-only",
   "type": "shopware-plugin",
   "extra": {
     "installer-name": "MakairaConnect"
