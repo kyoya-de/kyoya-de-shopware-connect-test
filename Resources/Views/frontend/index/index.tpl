@@ -113,7 +113,7 @@
                     _paq.push(["trackEcommerceCartUpdate", cartTotal]);
                   }, false);
                 }
-ä
+
                 {* A/B EXPERIMENTS *}
                 function getCookie(cname) {
                     let name = cname + "=";
