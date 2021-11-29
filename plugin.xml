@@ -4,7 +4,7 @@
     <label>Makaira :: Connect</label>
     <version>2.0.4</version>
     <copyright>makaira GmbH</copyright>
-    <license>MIT</license>
+    <license>GPLv3</license>
     <link>https://www.makaira.io/</link>
     <author>makaira GmbH</author>
     <description>Connector to Makaira</description>
