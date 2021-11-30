@@ -10,8 +10,8 @@ use Shopware\Models\Category\Category;
 
 class CategorySubscriber implements SubscriberInterface
 {
-    private EntityRepository $categoryRepository;
-    private EntityRepository $makairaRevisionRepository;
+    private $categoryRepository;
+    private $makairaRevisionRepository;
 
     public function __construct(
         EntityRepository $categoryRepository,
