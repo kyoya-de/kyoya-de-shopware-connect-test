@@ -1,3 +1,10 @@
+## [2.0.5](https://github.com/MakairaIO/shopware-connect/compare/2.0.4...2.0.5) (2021-11-30)
+
+
+### Bug Fixes
+
+* **php:** 7.3 compatibility ([c64deeb](https://github.com/MakairaIO/shopware-connect/commit/c64deeb7c3fad66ff9b4cc7ddda1e47536bb0446))
+
 ## [2.0.4](https://github.com/MakairaIO/shopware-connect/compare/2.0.3...2.0.4) (2021-11-26)
 
 
