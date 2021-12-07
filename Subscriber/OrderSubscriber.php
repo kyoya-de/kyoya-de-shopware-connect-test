@@ -9,7 +9,6 @@ use Enlight_Event_EventArgs;
 use MakairaConnect\Repositories\MakRevisionRepository;
 use PDO;
 use sOrder;
-use function Doctrine\DBAL\Query\QueryBuilder;
 
 class OrderSubscriber implements SubscriberInterface
 {
