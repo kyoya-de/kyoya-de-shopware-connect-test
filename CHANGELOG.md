@@ -1,3 +1,10 @@
+## [2.0.7](https://github.com/MakairaIO/shopware-connect/compare/2.0.6...2.0.7) (2021-12-07)
+
+
+### Bug Fixes
+
+* Fix Shopware quality issues ([8a05c41](https://github.com/MakairaIO/shopware-connect/commit/8a05c41f7d7c5f5a1468944781234e43865d791e))
+
 ## [2.0.6](https://github.com/MakairaIO/shopware-connect/compare/2.0.5...2.0.6) (2021-12-07)
 
 
