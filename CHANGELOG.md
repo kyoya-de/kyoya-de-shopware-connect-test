@@ -1,3 +1,10 @@
+## [2.0.6](https://github.com/MakairaIO/shopware-connect/compare/2.0.5...2.0.6) (2021-12-07)
+
+
+### Bug Fixes
+
+* Remove erroneous import ([d01ba5f](https://github.com/MakairaIO/shopware-connect/commit/d01ba5f46e17456e00c539d5c9da2f577ea5abc7))
+
 ## [2.0.5](https://github.com/MakairaIO/shopware-connect/compare/2.0.4...2.0.5) (2021-11-30)
 
 
