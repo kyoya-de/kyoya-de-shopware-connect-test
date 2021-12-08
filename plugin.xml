@@ -12,6 +12,9 @@
     <description lang="en">Connect your Shopware 5 store to the headless e-commerce marketing platform Makaira in just a few minutes and use the CMS, recommendations, A/B testing search and further functionalities.</description>
     <description lang="de">Verbinde Deinen Shopware 5 Shop in nur wenigen Minuten mit der Headless E-Commerce Marketing Plattform Makaira und nutze das CMS, Recommendations, A/B-Testing, Suche und weitere Funktionen.</description>
     <compatibility minVersion="5.6.0" />
+    <changelog version="2.0.10">
+        <changes lang="en">Shopware 5.6 compatibility fixes</changes>
+    </changelog>
     <changelog version="2.0.9">
         <changes lang="de">Version und deutsche Übersetzung zum Changelog hinzufügen</changes>
         <changes lang="en">Add version and german translation to changelog</changes>

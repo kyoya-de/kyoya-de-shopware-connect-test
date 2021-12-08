@@ -3,6 +3,7 @@
 namespace MakairaConnect\Subscriber;
 
 use Doctrine\Common\EventSubscriber;
+use Doctrine\Common\Persistence\ObjectRepository;
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
@@ -213,7 +214,7 @@ class DoctrineSubscriber implements EventSubscriber
     }
 
     /**
-     * @return EntityRepository|\Doctrine\Persistence\ObjectRepository|MakRevisionRepository
+     * @return EntityRepository|MakRevisionRepository|ObjectRepository
      */
     private function getRevisionRepository()
     {

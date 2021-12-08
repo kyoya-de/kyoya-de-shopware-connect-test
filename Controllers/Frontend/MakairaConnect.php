@@ -16,14 +16,12 @@ use Shopware\Bundle\StoreFrontBundle\Struct\Category;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product;
 use Shopware\Components\CSRFWhitelistAware;
 use Shopware\Components\Model\ModelManager;
-use Shopware\Components\Plugin\Configuration\ReaderInterface;
 use Shopware\Models\Article\Detail;
 use Shopware\Models\Shop\Locale;
 use Shopware\Models\Shop\Repository;
 use Shopware\Models\Shop\Shop;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * This file is part of a makaira GmbH project
@@ -76,7 +74,7 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
             $this->makairaRequest->request->replace($decoded);
         }
 
-        $configReader = $this->container->get(ReaderInterface::class);
+        $configReader = $this->container->get('shopware.plugin.config_reader');
         $this->config = $configReader->getByPluginName('MakairaConnect');
 
         $this->verifySignature($this->config['makaira_connect_secret']);
@@ -108,16 +106,13 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
             ->setParameter(1, $this->makairaRequest->request->get('language', 'de_DE'))
             ->setParameter(2, $shopId);
 
-        // TODO Add try-catch for \Doctrine\ORM\NoResultException!
         $query = $qb->getQuery();
         try {
             $contextShopId = (int) $query->getSingleScalarResult();
+            $this->productContext = $contextService->createProductContext($contextShopId);
         } catch (NoResultException $noResult) {
-            (new JsonResponse(['error' => 'Unknown language.'], Response::HTTP_NOT_FOUND))->send();
-            exit(0);
         }
 
-        $this->productContext = $contextService->createProductContext($contextShopId);
     }
 
     /**
@@ -176,7 +171,11 @@ class Shopware_Controllers_Frontend_MakairaConnect extends Enlight_Controller_Ac
     public function importAction()
     {
         $this->container->get('plugin_manager')->Controller()->ViewRenderer()->setNoRender();
-        $this->{$this->makairaRequest->request->get('action')}();
+        if (null !== $this->productContext) {
+            $this->{$this->makairaRequest->request->get('action')}();
+        } else {
+            (new JsonResponse(['error' => 'Unknown language']))->send();
+        }
     }
 
     /**
