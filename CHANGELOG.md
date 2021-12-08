@@ -1,3 +1,10 @@
+## [2.0.10](https://github.com/MakairaIO/shopware-connect/compare/2.0.9...2.0.10) (2021-12-08)
+
+
+### Bug Fixes
+
+* Shopware 5.6 compatibility ([cde4a82](https://github.com/MakairaIO/shopware-connect/commit/cde4a82d4e9f8ce72fb90025ae57528e56d80d8f))
+
 ## [2.0.9](https://github.com/MakairaIO/shopware-connect/compare/2.0.8...2.0.9) (2021-12-08)
 
 
