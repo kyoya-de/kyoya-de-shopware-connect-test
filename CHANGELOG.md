@@ -1,3 +1,10 @@
+## [2.0.11](https://github.com/MakairaIO/shopware-connect/compare/2.0.10...2.0.11) (2021-12-08)
+
+
+### Bug Fixes
+
+* Add german changelog entry ([cd72453](https://github.com/MakairaIO/shopware-connect/commit/cd72453236d5fcefbcade16272242d09e851b8d5))
+
 ## [2.0.10](https://github.com/MakairaIO/shopware-connect/compare/2.0.9...2.0.10) (2021-12-08)
 
 
