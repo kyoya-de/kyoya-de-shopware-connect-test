@@ -7,11 +7,11 @@ use DateTimeInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NonUniqueResultException;
 use Doctrine\ORM\NoResultException;
-use Exception;
 use Doctrine\DBAL;
 use MakairaConnect\Modifier\CategoryModifierInterface;
 use MakairaConnect\Modifier\ManufacturerModifierInterface;
 use MakairaConnect\Modifier\ProductModifierInterface;
+use PDO;
 use Shopware\Bundle\StoreFrontBundle\Struct\Category as CategoryStruct;
 use Shopware\Bundle\StoreFrontBundle\Struct\Property\Set as PropertySet;
 use Shopware\Bundle\StoreFrontBundle\Struct\Product;
@@ -96,7 +96,7 @@ class EntityMapper
         $this->shopCategories = $qb->select('s.id', 's.category_id')
             ->from('s_core_shops', 's')
             ->execute()
-            ->fetchAllKeyValue();
+            ->fetchAll(PDO::FETCH_KEY_PAIR);
     }
 
     /**
