@@ -1,3 +1,10 @@
+## [2.0.13](https://github.com/MakairaIO/shopware-connect/compare/2.0.12...2.0.13) (2021-12-09)
+
+
+### Bug Fixes
+
+* Scope for variables ([18bf015](https://github.com/MakairaIO/shopware-connect/commit/18bf0156a287d5c1fd22df9770d2cfbf4a6a89ab))
+
 ## [2.0.12](https://github.com/MakairaIO/shopware-connect/compare/2.0.11...2.0.12) (2021-12-08)
 
 

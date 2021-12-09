@@ -3,7 +3,7 @@
         xsi:noNamespaceSchemaLocation="../../../vendor/shopware/shopware/engine/Shopware/Components/Plugin/schema/plugin.xsd">
     <label lang="de">Makaira :: Connect</label>
     <label lang="en">Makaira :: Connect</label>
-    <version>2.0.12</version>
+    <version>2.0.13</version>
     <copyright>makaira GmbH</copyright>
     <license>GPL-3.0-only</license>
     <link>https://www.makaira.io/</link>
