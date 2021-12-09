@@ -1,3 +1,10 @@
+## [2.0.14](https://github.com/MakairaIO/shopware-connect/compare/2.0.13...2.0.14) (2021-12-09)
+
+
+### Bug Fixes
+
+* Add prefix to attribute IDs ([333fbab](https://github.com/MakairaIO/shopware-connect/commit/333fbab8159b423a415e8a403de216515635f0b3))
+
 ## [2.0.13](https://github.com/MakairaIO/shopware-connect/compare/2.0.12...2.0.13) (2021-12-09)
 
 
