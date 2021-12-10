@@ -12,6 +12,10 @@
     <description lang="en">Connect your Shopware 5 store to the headless e-commerce marketing platform Makaira in just a few minutes and use the CMS, recommendations, A/B testing search and further functionalities.</description>
     <description lang="de">Verbinde Deinen Shopware 5 Shop in nur wenigen Minuten mit der Headless E-Commerce Marketing Plattform Makaira und nutze das CMS, Recommendations, A/B-Testing, Suche und weitere Funktionen.</description>
     <compatibility minVersion="5.6.0" />
+    <changelog version="2.0.15">
+        <changes lang="en">Add suffix for variant configurations</changes>
+        <changes lang="de">Präfix für Varianten-Konfigurationen</changes>
+    </changelog>
     <changelog version="2.0.14">
         <changes lang="en">Add prefix to attribute IDs</changes>
         <changes lang="de">Präfix für Attribut-IDs</changes>

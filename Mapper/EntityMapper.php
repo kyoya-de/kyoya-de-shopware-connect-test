@@ -239,7 +239,7 @@ class EntityMapper
             $variantAttributes = $productAttributes;
             foreach ($variant->getConfiguration() as $group) {
                 $id = "variant_{$group->getId()}";
-                $title = $group->getName();
+                $title = "{$group->getName()} (Variant)";
                 foreach ($group->getOptions() as $groupOption) {
                     $value = $groupOption->getName();
                     $variantAttributes[$id][] = $value;
@@ -485,7 +485,7 @@ class EntityMapper
                 if (empty($attributeStr[$id])) {
                     $attributeStr[$id] = [
                         'id'    => $id,
-                        'title' => $group->getName(),
+                        'title' => "{$group->getName()} (Variant)",
                         'value' => [$option->getName()],
                     ];
                 } else {
