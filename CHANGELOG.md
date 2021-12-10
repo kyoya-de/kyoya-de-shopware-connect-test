@@ -1,3 +1,10 @@
+## [2.0.15](https://github.com/MakairaIO/shopware-connect/compare/2.0.14...2.0.15) (2021-12-10)
+
+
+### Bug Fixes
+
+* Add suffix for variant configurations ([3193df8](https://github.com/MakairaIO/shopware-connect/commit/3193df886bd52a47b1c9285f528753f429433bf1))
+
 ## [2.0.14](https://github.com/MakairaIO/shopware-connect/compare/2.0.13...2.0.14) (2021-12-09)
 
 
