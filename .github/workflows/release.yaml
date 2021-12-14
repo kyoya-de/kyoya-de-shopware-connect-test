@@ -25,6 +25,15 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      - name: Install dependencies
+        uses: php-actions/composer@v6
+        with:
+          command: install
+          dev: no
+          php_version: 7.2
+          version: 2
+          args: --ignore-platform-reqs --prefer-dist -no
+
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@v2
         with:

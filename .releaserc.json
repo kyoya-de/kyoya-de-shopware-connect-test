@@ -1,11 +1,12 @@
 {
-  "branches": ["stable"],
+  "branches": [
+    "stable"
+  ],
   "tagFormat": "${version}",
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
     "@semantic-release/changelog",
-    "@semantic-release/github",
     [
       "@semantic-release/exec",
       {
@@ -13,9 +14,30 @@
       }
     ],
     [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "zip -r /tmp/MakairaConnect-${nextRelease.version}.zip . -x .git/ .github/ node_modules/ .gitignore composer.lock yarn.lock package.json .releaserc.json"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "/tmp/MakairaConnect-${nextRelease.version}.zip",
+            "label": "Makaira connect plugin ${nextRelease.version}",
+            "name": "MakairaConnect-${nextRelease.version}.zip"
+          }
+        ]
+      }
+    ],
+    [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "plugin.xml"],
+        "assets": [
+          "CHANGELOG.md",
+          "plugin.xml"
+        ],
         "message": "chore(release): ${nextRelease.version} [skip ci] \n\n${nextRelease.notes}"
       }
     ]

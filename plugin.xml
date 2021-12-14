@@ -14,7 +14,7 @@
     <compatibility minVersion="5.6.0" />
     <changelog version="2.0.15">
         <changes lang="en">Add suffix for variant configurations</changes>
-        <changes lang="de">Präfix für Varianten-Konfigurationen</changes>
+        <changes lang="de">Suffix für Varianten-Konfigurationen</changes>
     </changelog>
     <changelog version="2.0.14">
         <changes lang="en">Add prefix to attribute IDs</changes>
